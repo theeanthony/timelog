@@ -43,7 +43,12 @@ function App(): React.JSX.Element {
         <ProjectList projects={projects} state={state} nowMs={nowMs} />
         {showForm && (
           <div className="form-drawer">
-            <ProjectForm existing={projects} onAdded={refreshProjects} onClose={() => setShowForm(false)} autoFocus />
+            <ProjectForm
+              existing={projects}
+              onAdded={refreshProjects}
+              onClose={() => setShowForm(false)}
+              autoFocus
+            />
           </div>
         )}
       </div>

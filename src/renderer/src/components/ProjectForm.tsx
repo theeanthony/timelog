@@ -9,7 +9,7 @@ interface Props {
   autoFocus?: boolean
 }
 
-export function nextUnusedColor(existing: Project[]): string {
+function nextUnusedColor(existing: Project[]): string {
   const used = new Set(existing.map((p) => p.color))
   return PALETTE.find((c) => !used.has(c)) ?? PALETTE[existing.length % PALETTE.length]
 }

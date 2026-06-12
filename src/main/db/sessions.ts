@@ -24,7 +24,12 @@ function toSession(r: SessionRow): Session {
   }
 }
 
-export function openSession(db: Db, projectCode: string, startTs: number, source: SessionSource): number {
+export function openSession(
+  db: Db,
+  projectCode: string,
+  startTs: number,
+  source: SessionSource
+): number {
   const result = db
     .prepare('INSERT INTO sessions (project_code, start_ts, source) VALUES (?, ?, ?)')
     .run(projectCode, startTs, source)
@@ -36,9 +41,9 @@ export function openSession(db: Db, projectCode: string, startTs: number, source
 export function getOpenSession(db: Db): Session | null {
   const idStr = getState(db, KEYS.openSessionId)
   if (!idStr) return null
-  const row = db.prepare('SELECT * FROM sessions WHERE id = ? AND end_ts IS NULL').get(Number(idStr)) as
-    | unknown
-    | undefined
+  const row = db
+    .prepare('SELECT * FROM sessions WHERE id = ? AND end_ts IS NULL')
+    .get(Number(idStr)) as unknown | undefined
   return row ? toSession(row as SessionRow) : null
 }
 
@@ -55,7 +60,11 @@ export function closeSession(db: Db, id: number, endTs: number, reason: ClosedRe
     if (duration <= 0 || duration > MAX_SESSION_MS) {
       db.prepare('DELETE FROM sessions WHERE id = ?').run(id)
     } else {
-      db.prepare('UPDATE sessions SET end_ts = ?, closed_reason = ? WHERE id = ?').run(endTs, reason, id)
+      db.prepare('UPDATE sessions SET end_ts = ?, closed_reason = ? WHERE id = ?').run(
+        endTs,
+        reason,
+        id
+      )
     }
   }
   deleteState(db, KEYS.openSessionId)

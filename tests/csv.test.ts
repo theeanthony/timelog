@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { openDatabase } from '../src/main/db/database'
 import { addProject } from '../src/main/db/projects'
 import { openSession, closeSession } from '../src/main/db/sessions'
-import { computeWeekTotals, currentWeekStartIso, weekRange, weekTotalsToCsv } from '../src/main/export/csv'
+import {
+  computeWeekTotals,
+  currentWeekStartIso,
+  weekRange,
+  weekTotalsToCsv
+} from '../src/main/export/csv'
 
 // Monday 2026-06-08 00:00 local
 const WEEK = '2026-06-08'
@@ -12,7 +17,11 @@ const h = (n: number): number => n * 3_600_000
 function seedDb(): ReturnType<typeof openDatabase> {
   const db = openDatabase(':memory:')
   addProject(db, { code: '7741-002', label: 'Substation A', color: '#5B8DEF' }, weekStart)
-  addProject(db, { code: '7741-105', label: 'Feeder calcs, "phase 2"', color: '#43B97F' }, weekStart)
+  addProject(
+    db,
+    { code: '7741-105', label: 'Feeder calcs, "phase 2"', color: '#43B97F' },
+    weekStart
+  )
   return db
 }
 

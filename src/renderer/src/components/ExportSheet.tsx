@@ -15,13 +15,19 @@ function shiftWeek(weekStartIso: string, weeks: number): string {
 }
 
 export function ExportSheet({ onClose }: Props): React.JSX.Element {
-  const [weekStart, setWeekStart] = useState(() => currentWeekStartIso(Date.now()))
+  const [thisWeek] = useState(() => currentWeekStartIso(Date.now()))
+  const [weekStart, setWeekStart] = useState(thisWeek)
   const [totals, setTotals] = useState<WeekTotals | null>(null)
   const [note, setNote] = useState<string | null>(null)
 
   useEffect(() => {
-    setTotals(null)
-    void window.timelog.getWeekTotals(weekStart).then(setTotals)
+    let stale = false
+    void window.timelog.getWeekTotals(weekStart).then((t) => {
+      if (!stale) setTotals(t)
+    })
+    return () => {
+      stale = true
+    }
   }, [weekStart])
 
   const flash = (msg: string): void => {
@@ -45,7 +51,11 @@ export function ExportSheet({ onClose }: Props): React.JSX.Element {
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-header">
-          <button type="button" className="btn--icon" onClick={() => setWeekStart((w) => shiftWeek(w, -1))}>
+          <button
+            type="button"
+            className="btn--icon"
+            onClick={() => setWeekStart((w) => shiftWeek(w, -1))}
+          >
             ‹
           </button>
           <span className="sheet-title">week of {weekStart}</span>
@@ -53,7 +63,7 @@ export function ExportSheet({ onClose }: Props): React.JSX.Element {
             type="button"
             className="btn--icon"
             onClick={() => setWeekStart((w) => shiftWeek(w, 1))}
-            disabled={weekStart >= currentWeekStartIso(Date.now())}
+            disabled={weekStart >= thisWeek}
           >
             ›
           </button>

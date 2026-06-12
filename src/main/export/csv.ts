@@ -40,7 +40,9 @@ export function weekTotalsToCsv(totals: WeekTotals): string {
   const lines = ['charge_code,label,hours,minutes,decimal_hours']
   for (const r of totals.rows) {
     const decimal = (r.totalMs / 3_600_000).toFixed(2)
-    lines.push([escape(r.code), escape(r.label), String(r.hours), String(r.minutes), decimal].join(','))
+    lines.push(
+      [escape(r.code), escape(r.label), String(r.hours), String(r.minutes), decimal].join(',')
+    )
   }
   return lines.join('\n') + '\n'
 }

@@ -30,8 +30,8 @@ export function SetupFlow({ projects, onProjectsChanged }: Props): React.JSX.Ele
       <div className="setup-body">
         <h1 className="setup-title">charge codes</h1>
         <p className="setup-hint">
-          Add the projects you charge time to. Window titles containing a code or label are
-          tracked automatically — you can always switch by tapping.
+          Add the projects you charge time to. Window titles containing a code or label are tracked
+          automatically — you can always switch by tapping.
         </p>
 
         <ProjectForm existing={projects} onAdded={onProjectsChanged} autoFocus />
@@ -50,7 +50,12 @@ export function SetupFlow({ projects, onProjectsChanged }: Props): React.JSX.Ele
       </div>
 
       <footer className="setup-footer">
-        <button type="button" className="btn btn--primary" onClick={start} disabled={projects.length === 0}>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={start}
+          disabled={projects.length === 0}
+        >
           start tracking →
         </button>
       </footer>

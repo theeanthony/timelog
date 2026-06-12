@@ -30,7 +30,9 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock): void {
     setState(db, KEYS.setupComplete, '1')
   })
 
-  ipcMain.handle(IPC.getWeekTotals, (_e, weekStartIso: string) => computeWeekTotals(db, weekStartIso))
+  ipcMain.handle(IPC.getWeekTotals, (_e, weekStartIso: string) =>
+    computeWeekTotals(db, weekStartIso)
+  )
 
   ipcMain.handle(IPC.exportWeekCsv, async (e, weekStartIso: string): Promise<ExportResult> => {
     const totals = computeWeekTotals(db, weekStartIso)

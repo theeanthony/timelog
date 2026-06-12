@@ -13,7 +13,9 @@ export function Titlebar({ mode }: Props): React.JSX.Element {
         <i />
       </span>
       <span className="titlebar-name">timelog</span>
-      <span className={`mode-badge mode-badge--${mode}`}>{mode === 'manual' ? 'MANUAL' : 'AUTO'}</span>
+      <span className={`mode-badge mode-badge--${mode}`}>
+        {mode === 'manual' ? 'MANUAL' : 'AUTO'}
+      </span>
     </header>
   )
 }

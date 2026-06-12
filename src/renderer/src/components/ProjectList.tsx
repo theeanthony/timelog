@@ -38,7 +38,9 @@ export function ProjectList({ projects, state, nowMs }: Props): React.JSX.Elemen
               <span className="project-dot" style={{ background: p.color }} />
               <span className="project-code">{p.code}</span>
               <span className="project-label">{p.label}</span>
-              <span className="project-total">{formatShort(todayTotalMs(state, p.code, nowMs))}</span>
+              <span className="project-total">
+                {formatShort(todayTotalMs(state, p.code, nowMs))}
+              </span>
             </button>
           </li>
         )

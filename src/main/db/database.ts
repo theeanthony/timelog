@@ -15,9 +15,9 @@ export function openDatabase(path: string): Db {
 
 function migrate(db: Db): void {
   db.exec(SCHEMA_DDL)
-  const row = db
-    .prepare(`SELECT value FROM app_state WHERE key = 'schema_version'`)
-    .get() as { value: string } | undefined
+  const row = db.prepare(`SELECT value FROM app_state WHERE key = 'schema_version'`).get() as
+    | { value: string }
+    | undefined
   if (!row) {
     db.prepare(`INSERT INTO app_state (key, value) VALUES ('schema_version', ?)`).run(
       String(SCHEMA_VERSION)

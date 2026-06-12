@@ -10,7 +10,11 @@ export function compileRules(rules: Rule[]): CompiledRule[] {
   const compiled: CompiledRule[] = []
   for (const r of rules) {
     try {
-      compiled.push({ projectCode: r.projectCode, regex: new RegExp(r.pattern, 'i'), priority: r.priority })
+      compiled.push({
+        projectCode: r.projectCode,
+        regex: new RegExp(r.pattern, 'i'),
+        priority: r.priority
+      })
     } catch {
       // A bad user pattern must never take the tracker down; skip it.
     }

@@ -1,0 +1,26 @@
+name: Release (Windows)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: timelog-windows
+          path: |
+            dist/*-setup.exe
+            dist/*-portable.exe
+          if-no-files-found: error

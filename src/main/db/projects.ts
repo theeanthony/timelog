@@ -20,7 +20,12 @@ export function listProjects(db: Db): Project[] {
   const rows = db
     .prepare('SELECT code, label, color, created_at FROM projects ORDER BY created_at')
     .all() as unknown as ProjectRow[]
-  return rows.map((r) => ({ code: r.code, label: r.label, color: r.color, createdAt: r.created_at }))
+  return rows.map((r) => ({
+    code: r.code,
+    label: r.label,
+    color: r.color,
+    createdAt: r.created_at
+  }))
 }
 
 export function getProject(db: Db, code: string): Project | null {
@@ -60,7 +65,9 @@ export function addRule(db: Db, projectCode: string, pattern: string, priority =
 
 export function listEnabledRules(db: Db): Rule[] {
   const rows = db
-    .prepare('SELECT id, project_code, pattern, priority, enabled FROM rules WHERE enabled = 1 ORDER BY priority DESC, id')
+    .prepare(
+      'SELECT id, project_code, pattern, priority, enabled FROM rules WHERE enabled = 1 ORDER BY priority DESC, id'
+    )
     .all() as unknown as RuleRow[]
   return rows.map((r) => ({
     id: r.id,

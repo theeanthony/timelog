@@ -50,7 +50,10 @@ function restorePosition(db: Db, win: BrowserWindow): void {
   if (!saved) {
     // Default: bottom-right corner of the primary display.
     const { workArea } = screen.getPrimaryDisplay()
-    win.setPosition(workArea.x + workArea.width - PANEL_WIDTH - 24, workArea.y + workArea.height - PANEL_HEIGHT - 24)
+    win.setPosition(
+      workArea.x + workArea.width - PANEL_WIDTH - 24,
+      workArea.y + workArea.height - PANEL_HEIGHT - 24
+    )
     return
   }
   try {
