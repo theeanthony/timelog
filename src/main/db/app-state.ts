@@ -22,6 +22,7 @@ export const KEYS = {
   heartbeatTs: 'heartbeat_ts',
   openSessionId: 'open_session_id',
   mode: 'mode',
+  trackingMode: 'tracking_mode',
   manualProjectCode: 'manual_project_code',
   setupComplete: 'setup_complete',
   windowPosition: 'window_position'

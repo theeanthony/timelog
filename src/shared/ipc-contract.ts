@@ -1,4 +1,4 @@
-import type { Project, TrackerState, WeekTotals } from './types'
+import type { Project, TrackerState, TrackingMode, WeekTotals } from './types'
 
 export const IPC = {
   // main → renderer push
@@ -7,6 +7,7 @@ export const IPC = {
   getState: 'tracker:getState',
   setManualOverride: 'tracker:setManualOverride',
   clearOverride: 'tracker:clearOverride',
+  setTrackingMode: 'tracker:setTrackingMode',
   listProjects: 'projects:list',
   addProject: 'projects:add',
   completeSetup: 'setup:complete',
@@ -29,9 +30,10 @@ export interface TimelogApi {
   onState(cb: (s: TrackerState) => void): () => void
   setManualOverride(code: string): Promise<void>
   clearOverride(): Promise<void>
+  setTrackingMode(mode: TrackingMode): Promise<void>
   listProjects(): Promise<Project[]>
   addProject(p: NewProject): Promise<void>
-  completeSetup(): Promise<void>
+  completeSetup(trackingMode: TrackingMode): Promise<void>
   getWeekTotals(weekStartIso: string): Promise<WeekTotals>
   exportWeekCsv(weekStartIso: string): Promise<ExportResult>
   copyWeekCsv(weekStartIso: string): Promise<void>

@@ -37,7 +37,7 @@ function App(): React.JSX.Element {
 
   return (
     <div className="app" data-mode={state.mode} data-status={state.status}>
-      <Titlebar mode={state.mode} />
+      <Titlebar mode={state.mode} trackingMode={state.trackingMode} />
       <ClockZone state={state} nowMs={nowMs} />
       <div className="list-zone">
         <ProjectList projects={projects} state={state} nowMs={nowMs} />

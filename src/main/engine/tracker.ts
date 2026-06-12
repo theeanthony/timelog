@@ -57,7 +57,13 @@ export class Tracker {
     this.rules = compileRules(listEnabledRules(this.db))
   }
 
+  /** Privacy preference: 'manual' means the window source is never invoked. */
+  get trackingMode(): 'auto' | 'manual' {
+    return getState(this.db, KEYS.trackingMode) === 'manual' ? 'manual' : 'auto'
+  }
+
   get mode(): 'auto' | 'manual' {
+    if (this.trackingMode === 'manual') return 'manual'
     return getState(this.db, KEYS.mode) === 'manual' ? 'manual' : 'auto'
   }
 
@@ -76,6 +82,8 @@ export class Tracker {
       } else {
         this.idle = false
         if (this.mode === 'manual') {
+          // Covers both the override within auto tracking and manual-only
+          // tracking mode; neither path ever reads a window title.
           this.ensureManualSession(now)
         } else {
           await this.autoTick(now)
@@ -170,10 +178,27 @@ export class Tracker {
     this.pushState()
   }
 
+  /**
+   * In auto tracking mode: release the override and resume auto tracking.
+   * In manual tracking mode: check out (stop the clock, stay manual).
+   */
   clearOverride(): void {
     const now = this.clock.now()
     const open = getOpenSession(this.db)
     if (open) closeSession(this.db, open.id, now, 'normal')
+    setState(this.db, KEYS.mode, 'auto')
+    setState(this.db, KEYS.manualProjectCode, '')
+    this.candidate = null
+    this.pushState()
+  }
+
+  setTrackingMode(trackingMode: 'auto' | 'manual'): void {
+    if (trackingMode === this.trackingMode) return
+    const now = this.clock.now()
+    const open = getOpenSession(this.db)
+    if (open) closeSession(this.db, open.id, now, 'normal')
+    setState(this.db, KEYS.trackingMode, trackingMode)
+    // Start fresh in the new mode: no override, checked out.
     setState(this.db, KEYS.mode, 'auto')
     setState(this.db, KEYS.manualProjectCode, '')
     this.candidate = null
@@ -187,7 +212,8 @@ export class Tracker {
 
     let status: TrackerState['status'] = 'tracking'
     if (this.locked) status = 'locked'
-    else if (this.idle) status = 'idle'
+    else if (this.idle && (this.mode === 'auto' || this.manualProjectCode)) status = 'idle'
+    else if (this.trackingMode === 'manual') status = open ? 'tracking' : 'checked_out'
     // Permission only matters in auto mode; manual tracking never reads titles.
     else if (this.permissionDenied && this.mode === 'auto') status = 'permission_needed'
     else if (!open) status = 'no_match'
@@ -196,6 +222,7 @@ export class Tracker {
 
     return {
       mode: this.mode,
+      trackingMode: this.trackingMode,
       status,
       activeProject: activeCode ? getProject(this.db, activeCode) : null,
       openSessionStartTs: open?.startTs ?? null,

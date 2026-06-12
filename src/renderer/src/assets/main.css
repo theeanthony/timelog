@@ -167,7 +167,7 @@ button {
   transition: opacity 0.6s ease;
 }
 
-.app[data-mode='manual'] .clock-timer {
+.app[data-mode='manual'] .clock-timer:not(.clock-timer--stopped) {
   color: var(--manual-bright);
 }
 
@@ -644,4 +644,60 @@ button {
 
 .sheet-actions .export-note {
   margin-right: auto;
+}
+
+/* ── tracking-mode choice ─────────────────────────────────── */
+
+.mode-badge--button {
+  cursor: pointer;
+}
+
+.mode-badge--button:hover {
+  filter: brightness(1.25);
+}
+
+.mode-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.mode-card--selected {
+  border-color: color-mix(in srgb, var(--accent-bright) 55%, transparent);
+  background: color-mix(in srgb, var(--accent-deep) 14%, var(--bg-raised));
+}
+
+.mode-card-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.mode-card--selected .mode-card-title {
+  color: var(--accent-bright);
+}
+
+.mode-card-desc {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.setup-title + .mode-choice,
+.mode-choice + .setup-hint {
+  margin-bottom: 14px;
 }

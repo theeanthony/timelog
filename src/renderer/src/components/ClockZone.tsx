@@ -10,7 +10,8 @@ const STATUS_NOTES: Record<string, string> = {
   idle: 'idle — timer paused',
   locked: 'screen locked',
   no_match: 'no project matched',
-  permission_needed: 'screen recording permission needed'
+  permission_needed: 'screen recording permission needed — or switch to manual',
+  checked_out: 'checked out — tap a project to check in'
 }
 
 export function ClockZone({ state, nowMs }: Props): React.JSX.Element {
@@ -32,7 +33,7 @@ export function ClockZone({ state, nowMs }: Props): React.JSX.Element {
             {state.mode === 'manual' && (
               <span className="manual-indicator">
                 <i className="pulse-dot" />
-                manual override
+                {state.trackingMode === 'manual' ? 'checked in' : 'manual override'}
               </span>
             )}
           </div>

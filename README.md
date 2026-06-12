@@ -1,14 +1,27 @@
 # timelog
 
-A small, always-visible desktop time tracker for engineers. It passively watches
-which project you're working on (by active window title), maps titles to your
-charge codes, and gives you a paste-ready weekly CSV for your timesheet system.
+A small, always-visible desktop time tracker for engineers. It tracks which
+project you're working on, maps it to your charge codes, and gives you a
+paste-ready weekly CSV for your timesheet system.
 
 **Local-only by design.** No cloud, no accounts, no telemetry — the app makes
 zero network calls at runtime. All data lives in a SQLite file in your OS
 app-data folder.
 
-## How it works
+## Two tracking modes — your choice at setup
+
+- **Manual check-in** — tap a project to start its clock, tap again to stop.
+  Nothing on your screen is ever read; the window-title API is never called and
+  no OS permissions are needed.
+- **Automatic** — the active window title is matched to your charge codes
+  locally. No screenshots, no keystrokes, no network — but it does read window
+  titles (on macOS this requires the Screen Recording permission).
+
+Switch between them anytime by clicking the AUTO/MANUAL badge in the titlebar.
+Idle detection (pause after 5 min without input) works in both modes; it reads
+only the system input-idle timer, never screen content.
+
+## How automatic tracking works
 
 - Every 5 seconds the active window title is read and matched against your
   project rules (regex, case-insensitive; by default a project's charge code or
@@ -32,9 +45,10 @@ inspection, no keystroke logging, no screenshots.
 ## Platform support
 
 **Windows is the v1 ship target** (installer + portable .exe). The app also
-runs on macOS for development; macOS needs **Screen Recording** permission to
-read window titles (System Settings → Privacy & Security → Screen Recording —
-grant it to the terminal/IDE that launches the app in dev).
+runs on macOS for development. On macOS, *automatic* mode needs **Screen
+Recording** permission to read window titles (System Settings → Privacy &
+Security → Screen Recording — grant it to the terminal/IDE that launches the
+app in dev). Manual check-in mode needs no permissions on any platform.
 
 ## Development
 

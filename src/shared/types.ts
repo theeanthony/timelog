@@ -26,10 +26,19 @@ export interface Session {
 }
 
 export type TrackerMode = 'auto' | 'manual'
-export type TrackerStatus = 'tracking' | 'idle' | 'no_match' | 'locked' | 'permission_needed'
+/** How tracking works at all: passive window-title polling, or manual check-in only (no window reads ever). */
+export type TrackingMode = 'auto' | 'manual'
+export type TrackerStatus =
+  | 'tracking'
+  | 'idle'
+  | 'no_match'
+  | 'locked'
+  | 'permission_needed'
+  | 'checked_out'
 
 export interface TrackerState {
   mode: TrackerMode
+  trackingMode: TrackingMode
   status: TrackerStatus
   activeProject: Project | null
   openSessionStartTs: number | null

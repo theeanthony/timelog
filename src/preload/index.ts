@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC, type NewProject, type TimelogApi } from '../shared/ipc-contract'
-import type { TrackerState } from '../shared/types'
+import type { TrackerState, TrackingMode } from '../shared/types'
 
 const api: TimelogApi = {
   getState: () => ipcRenderer.invoke(IPC.getState),
@@ -11,9 +11,11 @@ const api: TimelogApi = {
   },
   setManualOverride: (code: string) => ipcRenderer.invoke(IPC.setManualOverride, code),
   clearOverride: () => ipcRenderer.invoke(IPC.clearOverride),
+  setTrackingMode: (mode: TrackingMode) => ipcRenderer.invoke(IPC.setTrackingMode, mode),
   listProjects: () => ipcRenderer.invoke(IPC.listProjects),
   addProject: (p: NewProject) => ipcRenderer.invoke(IPC.addProject, p),
-  completeSetup: () => ipcRenderer.invoke(IPC.completeSetup),
+  completeSetup: (trackingMode: TrackingMode) =>
+    ipcRenderer.invoke(IPC.completeSetup, trackingMode),
   getWeekTotals: (weekStartIso: string) => ipcRenderer.invoke(IPC.getWeekTotals, weekStartIso),
   exportWeekCsv: (weekStartIso: string) => ipcRenderer.invoke(IPC.exportWeekCsv, weekStartIso),
   copyWeekCsv: (weekStartIso: string) => ipcRenderer.invoke(IPC.copyWeekCsv, weekStartIso)

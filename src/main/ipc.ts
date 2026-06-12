@@ -19,6 +19,10 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock): void {
     tracker.clearOverride()
   })
 
+  ipcMain.handle(IPC.setTrackingMode, (_e, mode: 'auto' | 'manual') => {
+    tracker.setTrackingMode(mode)
+  })
+
   ipcMain.handle(IPC.listProjects, () => listProjects(db))
 
   ipcMain.handle(IPC.addProject, (_e, p: NewProject) => {
@@ -26,7 +30,8 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock): void {
     tracker.reloadRules()
   })
 
-  ipcMain.handle(IPC.completeSetup, () => {
+  ipcMain.handle(IPC.completeSetup, (_e, trackingMode: 'auto' | 'manual') => {
+    setState(db, KEYS.trackingMode, trackingMode === 'manual' ? 'manual' : 'auto')
     setState(db, KEYS.setupComplete, '1')
   })
 

@@ -18,7 +18,10 @@ export class FakeClock implements Clock {
 export class FakeWindowSource implements WindowSource {
   current: ActiveWindowInfo | null = null
   permission: 'granted' | 'denied' = 'granted'
+  /** Number of times the tracker actually read the active window. */
+  reads = 0
   async getActiveWindow(): Promise<ActiveWindowInfo | null> {
+    this.reads++
     return this.current
   }
   async checkPermission(): Promise<'granted' | 'denied' | 'unknown'> {
@@ -60,10 +63,13 @@ export interface Rig {
   step(n?: number): Promise<void>
 }
 
-export function makeRig(): Rig {
+export function makeRig(opts: { trackingMode?: 'auto' | 'manual' } = {}): Rig {
   const db = openDatabase(':memory:')
   addProject(db, { code: 'P-100', label: 'Substation Alpha', color: '#5B8DEF' }, T0 - 1000)
   addProject(db, { code: 'P-200', label: 'Feeder Beta', color: '#43B97F' }, T0 - 1000)
+  if (opts.trackingMode === 'manual') {
+    db.prepare(`INSERT INTO app_state (key, value) VALUES ('tracking_mode', 'manual')`).run()
+  }
 
   const clock = new FakeClock()
   const windows = new FakeWindowSource()
