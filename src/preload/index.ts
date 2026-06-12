@@ -17,6 +17,8 @@ const api: TimelogApi = {
   completeSetup: (trackingMode: TrackingMode) =>
     ipcRenderer.invoke(IPC.completeSetup, trackingMode),
   getWeekTotals: (weekStartIso: string) => ipcRenderer.invoke(IPC.getWeekTotals, weekStartIso),
+  getWeekBreakdown: (weekStartIso: string) =>
+    ipcRenderer.invoke(IPC.getWeekBreakdown, weekStartIso),
   exportWeekCsv: (weekStartIso: string) => ipcRenderer.invoke(IPC.exportWeekCsv, weekStartIso),
   copyWeekCsv: (weekStartIso: string) => ipcRenderer.invoke(IPC.copyWeekCsv, weekStartIso)
 }

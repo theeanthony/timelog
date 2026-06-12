@@ -101,6 +101,16 @@ export function totalsByProject(db: Db, fromTs: number, toTs: number): Record<st
   return totals
 }
 
+/** Closed sessions overlapping [fromTs, toTs), including ones that start before it. */
+export function sessionsOverlapping(db: Db, fromTs: number, toTs: number): Session[] {
+  const rows = db
+    .prepare(
+      'SELECT * FROM sessions WHERE end_ts IS NOT NULL AND end_ts > ? AND start_ts < ? ORDER BY start_ts'
+    )
+    .all(fromTs, toTs) as unknown as SessionRow[]
+  return rows.map(toSession)
+}
+
 export function listSessions(db: Db, fromTs: number, toTs: number): Session[] {
   const rows = db
     .prepare('SELECT * FROM sessions WHERE start_ts >= ? AND start_ts < ? ORDER BY start_ts')

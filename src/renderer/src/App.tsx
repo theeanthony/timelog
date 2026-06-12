@@ -7,7 +7,7 @@ import { ProjectList } from './components/ProjectList'
 import { ProjectForm } from './components/ProjectForm'
 import { BottomBar } from './components/BottomBar'
 import { SetupFlow } from './components/SetupFlow'
-import { ExportSheet } from './components/ExportSheet'
+import { WeekView } from './components/WeekView'
 
 function App(): React.JSX.Element {
   const { state, nowMs } = useTrackerState()
@@ -57,7 +57,14 @@ function App(): React.JSX.Element {
         onExport={() => setShowExport(true)}
         exportNote={null}
       />
-      {showExport && <ExportSheet onClose={() => setShowExport(false)} />}
+      {showExport && (
+        <WeekView
+          projects={projects}
+          state={state}
+          nowMs={nowMs}
+          onClose={() => setShowExport(false)}
+        />
+      )}
     </div>
   )
 }

@@ -60,3 +60,15 @@ export interface WeekTotals {
   weekStartIso: string
   rows: WeekTotalRow[]
 }
+
+export interface DayBreakdown {
+  dateIso: string
+  msByProject: Record<string, number>
+  totalMs: number
+}
+
+export interface WeekBreakdown {
+  weekStartIso: string
+  /** Always 7 entries, Monday first. */
+  days: DayBreakdown[]
+}

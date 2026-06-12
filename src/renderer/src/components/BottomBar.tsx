@@ -12,7 +12,7 @@ export function BottomBar({ onAddProject, onExport, exportNote }: Props): React.
       </button>
       <span className="export-note">{exportNote}</span>
       <button type="button" className="btn btn--bar" onClick={onExport}>
-        export week ⤓
+        week ▦
       </button>
     </footer>
   )

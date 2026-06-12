@@ -1,4 +1,4 @@
-import type { Project, TrackerState, TrackingMode, WeekTotals } from './types'
+import type { Project, TrackerState, TrackingMode, WeekBreakdown, WeekTotals } from './types'
 
 export const IPC = {
   // main → renderer push
@@ -12,6 +12,7 @@ export const IPC = {
   addProject: 'projects:add',
   completeSetup: 'setup:complete',
   getWeekTotals: 'export:weekTotals',
+  getWeekBreakdown: 'export:weekBreakdown',
   exportWeekCsv: 'export:saveCsv',
   copyWeekCsv: 'export:copyCsv'
 } as const
@@ -35,6 +36,7 @@ export interface TimelogApi {
   addProject(p: NewProject): Promise<void>
   completeSetup(trackingMode: TrackingMode): Promise<void>
   getWeekTotals(weekStartIso: string): Promise<WeekTotals>
+  getWeekBreakdown(weekStartIso: string): Promise<WeekBreakdown>
   exportWeekCsv(weekStartIso: string): Promise<ExportResult>
   copyWeekCsv(weekStartIso: string): Promise<void>
 }

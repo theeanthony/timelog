@@ -5,6 +5,7 @@ import type { Db } from './db/database'
 import { KEYS, setState } from './db/app-state'
 import { addProject, listProjects } from './db/projects'
 import { computeWeekTotals, weekTotalsToCsv } from './export/csv'
+import { computeWeekBreakdown } from './export/breakdown'
 import type { Tracker } from './engine/tracker'
 import type { Clock } from './platform/types'
 
@@ -37,6 +38,10 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock): void {
 
   ipcMain.handle(IPC.getWeekTotals, (_e, weekStartIso: string) =>
     computeWeekTotals(db, weekStartIso)
+  )
+
+  ipcMain.handle(IPC.getWeekBreakdown, (_e, weekStartIso: string) =>
+    computeWeekBreakdown(db, weekStartIso)
   )
 
   ipcMain.handle(IPC.exportWeekCsv, async (e, weekStartIso: string): Promise<ExportResult> => {
