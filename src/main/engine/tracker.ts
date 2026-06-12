@@ -188,7 +188,8 @@ export class Tracker {
     let status: TrackerState['status'] = 'tracking'
     if (this.locked) status = 'locked'
     else if (this.idle) status = 'idle'
-    else if (this.permissionDenied) status = 'permission_needed'
+    // Permission only matters in auto mode; manual tracking never reads titles.
+    else if (this.permissionDenied && this.mode === 'auto') status = 'permission_needed'
     else if (!open) status = 'no_match'
 
     const activeCode = open?.projectCode ?? (this.mode === 'manual' ? this.manualProjectCode : null)
