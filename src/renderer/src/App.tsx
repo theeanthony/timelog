@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Project } from '../../shared/types'
-import { currentWeekStartIso } from '../../shared/week'
 import { useTrackerState } from './hooks/useTrackerState'
 import { Titlebar } from './components/Titlebar'
 import { ClockZone } from './components/ClockZone'
 import { ProjectList } from './components/ProjectList'
 import { ProjectForm } from './components/ProjectForm'
 import { BottomBar } from './components/BottomBar'
+import { SetupFlow } from './components/SetupFlow'
+import { ExportSheet } from './components/ExportSheet'
 
 function App(): React.JSX.Element {
   const { state, nowMs } = useTrackerState()
   const [projects, setProjects] = useState<Project[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [exportNote, setExportNote] = useState<string | null>(null)
+  const [showExport, setShowExport] = useState(false)
 
   const refreshProjects = useCallback((): void => {
     void window.timelog.listProjects().then(setProjects)
@@ -20,19 +21,18 @@ function App(): React.JSX.Element {
 
   useEffect(refreshProjects, [refreshProjects])
 
-  const exportWeek = useCallback((): void => {
-    void window.timelog.exportWeekCsv(currentWeekStartIso(Date.now())).then((result) => {
-      if ('savedTo' in result) {
-        setExportNote('saved ✓')
-        setTimeout(() => setExportNote(null), 2500)
-      }
-    })
-  }, [])
-
-  useEffect(() => window.timelogEvents.onOpenExportDialog(exportWeek), [exportWeek])
+  useEffect(() => window.timelogEvents.onOpenExportDialog(() => setShowExport(true)), [])
 
   if (!state) {
     return <div className="app app--loading">…</div>
+  }
+
+  if (!state.setupComplete) {
+    return (
+      <div className="app" data-mode="auto" data-status="tracking">
+        <SetupFlow projects={projects} onProjectsChanged={refreshProjects} />
+      </div>
+    )
   }
 
   return (
@@ -47,7 +47,12 @@ function App(): React.JSX.Element {
           </div>
         )}
       </div>
-      <BottomBar onAddProject={() => setShowForm((v) => !v)} onExport={exportWeek} exportNote={exportNote} />
+      <BottomBar
+        onAddProject={() => setShowForm((v) => !v)}
+        onExport={() => setShowExport(true)}
+        exportNote={null}
+      />
+      {showExport && <ExportSheet onClose={() => setShowExport(false)} />}
     </div>
   )
 }
