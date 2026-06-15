@@ -4,6 +4,8 @@ import type { Db } from '../db/database'
 import { KEYS, getState, setState } from '../db/app-state'
 import { getProject, listEnabledRules, listProjects } from '../db/projects'
 import { closeSession, getOpenSession, openSession, totalsByProject } from '../db/sessions'
+import { listPendingIdle, recordIdleEvent } from '../db/idle-events'
+import { getPrefs } from '../prefs'
 import { compileRules, matchTitle, type CompiledRule } from './rules'
 
 export const TICK_MS = 5_000
@@ -39,6 +41,8 @@ export class Tracker {
   private permissionDenied = false
   /** Pending project change: code (or null = no-match) and when it was first seen. */
   private candidate: { code: string | null; since: number } | null = null
+  /** While idle: the project + gap-start so the return can be offered for review. */
+  private idleSince: { projectCode: string | null; startTs: number } | null = null
   private tickCount = 0
 
   constructor(deps: TrackerDeps) {
@@ -57,6 +61,11 @@ export class Tracker {
     this.rules = compileRules(listEnabledRules(this.db))
   }
 
+  /** Push current state to the renderer — call after out-of-band DB edits. */
+  refresh(): void {
+    this.pushState()
+  }
+
   /** Privacy preference: 'manual' means the window source is never invoked. */
   get trackingMode(): 'auto' | 'manual' {
     return getState(this.db, KEYS.trackingMode) === 'manual' ? 'manual' : 'auto'
@@ -71,15 +80,26 @@ export class Tracker {
     return getState(this.db, KEYS.manualProjectCode)
   }
 
+  /** Idle threshold in seconds — user-tunable, defaults to IDLE_SECONDS. */
+  private get idleThresholdSeconds(): number {
+    return getPrefs(this.db).idleTimeoutSec
+  }
+
+  /** Dwell before committing an auto switch — user-tunable, defaults to DWELL_MS. */
+  private get dwellMs(): number {
+    return getPrefs(this.db).dwellSec * 1000
+  }
+
   async tick(): Promise<void> {
     const now = this.clock.now()
     this.tickCount++
 
     if (!this.locked) {
       const idleSeconds = this.idleSource.getIdleSeconds()
-      if (idleSeconds >= IDLE_SECONDS) {
+      if (idleSeconds >= this.idleThresholdSeconds) {
         this.enterIdle(now, idleSeconds)
       } else {
+        if (this.idle) this.finishIdle(now)
         this.idle = false
         if (this.mode === 'manual') {
           // Covers both the override within auto tracking and manual-only
@@ -103,9 +123,20 @@ export class Tracker {
       // Backdate the close to when input actually stopped.
       const endTs = Math.max(open.startTs, now - idleSeconds * 1000)
       closeSession(this.db, open.id, endTs, 'idle')
+      // Remember the gap so the user can review it on return (first entry only).
+      if (!this.idle) this.idleSince = { projectCode: open.projectCode, startTs: endTs }
     }
     this.idle = true
     this.candidate = null
+  }
+
+  /** Activity returned: log the idle gap for review if it covered real work. */
+  private finishIdle(now: number): void {
+    const since = this.idleSince
+    this.idleSince = null
+    if (since?.projectCode && now > since.startTs) {
+      recordIdleEvent(this.db, since.projectCode, since.startTs, now)
+    }
   }
 
   private ensureManualSession(now: number): void {
@@ -143,7 +174,7 @@ export class Tracker {
       this.candidate = { code: matched, since: now }
       return
     }
-    if (now - this.candidate.since < DWELL_MS) return
+    if (now - this.candidate.since < this.dwellMs) return
 
     const switchTs = this.candidate.since
     this.candidate = null
@@ -159,6 +190,9 @@ export class Tracker {
     if (open) closeSession(this.db, open.id, now, 'lock')
     this.locked = true
     this.candidate = null
+    // Locked time isn't offered for idle review.
+    this.idle = false
+    this.idleSince = null
     this.pushState()
   }
 
@@ -228,7 +262,8 @@ export class Tracker {
       openSessionStartTs: open?.startTs ?? null,
       todayMsByProject: totalsByProject(this.db, dayStart, now),
       lastWindowTitle: this.lastWindowTitle,
-      setupComplete: getState(this.db, KEYS.setupComplete) === '1'
+      setupComplete: getState(this.db, KEYS.setupComplete) === '1',
+      pendingIdle: listPendingIdle(this.db)
     }
   }
 

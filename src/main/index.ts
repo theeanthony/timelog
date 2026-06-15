@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, globalShortcut } from 'electron'
 import { join } from 'node:path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { IPC } from '../shared/ipc-contract'
@@ -11,6 +11,9 @@ import { systemClock } from './platform/types'
 import { registerIpc } from './ipc'
 import { createPanelWindow } from './window'
 import { createTray } from './tray'
+import { Notifier } from './notifier'
+import { getPrefs } from './prefs'
+import { applyWindowPrefs, registerGlobalShortcut } from './runtime'
 
 let isQuitting = false
 
@@ -32,6 +35,7 @@ if (!gotLock) {
     }
 
     const win = createPanelWindow(db)
+    const notifier = new Notifier(db, systemClock)
 
     const tracker = new Tracker({
       db,
@@ -40,19 +44,35 @@ if (!gotLock) {
       clock: systemClock,
       onState: (state) => {
         if (!win.isDestroyed()) win.webContents.send(IPC.stateUpdate, state)
+        notifier.onState(state)
       }
     })
 
-    registerIpc(db, tracker, systemClock)
+    registerIpc(db, tracker, systemClock, win)
+
+    // Apply persisted prefs to the window/OS and bind the global hotkey.
+    const prefs = getPrefs(db)
+    applyWindowPrefs(win, prefs)
+    registerGlobalShortcut(win, prefs.globalShortcut)
 
     const interval = setInterval(() => {
       tracker.tick().catch((err) => console.error('[timelog] tick failed:', err))
     }, TICK_MS)
 
-    createTray(win, () => {
-      win.show()
-      win.webContents.send('export:openDialog')
-    })
+    // Coarse 60s cadence for the optional end-of-day summary.
+    const dailyInterval = setInterval(() => notifier.checkDaily(), 60_000)
+
+    createTray(
+      win,
+      () => {
+        win.show()
+        win.webContents.send('export:openDialog')
+      },
+      () => {
+        win.show()
+        win.webContents.send('settings:open')
+      }
+    )
 
     // Closing the panel hides it to the tray; the tracker keeps running.
     win.on('close', (e) => {
@@ -65,6 +85,8 @@ if (!gotLock) {
     app.on('before-quit', () => {
       isQuitting = true
       clearInterval(interval)
+      clearInterval(dailyInterval)
+      globalShortcut.unregisterAll()
       tracker.shutdown()
       db.close()
     })

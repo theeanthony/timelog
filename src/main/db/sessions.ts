@@ -117,3 +117,54 @@ export function listSessions(db: Db, fromTs: number, toTs: number): Session[] {
     .all(fromTs, toTs) as unknown as SessionRow[]
   return rows.map(toSession)
 }
+
+/** Whether [startTs, endTs) is a sane closed-session span (drift guard). */
+export function isValidSpan(startTs: number, endTs: number): boolean {
+  const duration = endTs - startTs
+  return duration > 0 && duration <= MAX_SESSION_MS
+}
+
+/**
+ * Insert an already-closed session — used for manual "log time I forgot"
+ * entries and for keeping/reassigning reviewed idle time. Returns the new id,
+ * or null if the span fails the drift guard.
+ */
+export function insertClosedSession(
+  db: Db,
+  projectCode: string,
+  startTs: number,
+  endTs: number,
+  source: SessionSource = 'manual',
+  reason: ClosedReason = 'normal'
+): number | null {
+  if (!isValidSpan(startTs, endTs)) return null
+  const result = db
+    .prepare(
+      'INSERT INTO sessions (project_code, start_ts, end_ts, source, closed_reason) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(projectCode, startTs, endTs, source, reason)
+  return Number(result.lastInsertRowid)
+}
+
+export function reassignSession(db: Db, id: number, newCode: string): void {
+  db.prepare('UPDATE sessions SET project_code = ? WHERE id = ?').run(newCode, id)
+}
+
+export function deleteSession(db: Db, id: number): void {
+  db.prepare('DELETE FROM sessions WHERE id = ?').run(id)
+}
+
+/** Split a closed session at atTs into two adjacent sessions. Returns new id. */
+export function splitSession(db: Db, id: number, atTs: number): number | null {
+  const s = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id) as unknown as
+    | SessionRow
+    | undefined
+  if (!s || s.end_ts === null || atTs <= s.start_ts || atTs >= s.end_ts) return null
+  db.prepare('UPDATE sessions SET end_ts = ? WHERE id = ?').run(atTs, id)
+  const result = db
+    .prepare(
+      'INSERT INTO sessions (project_code, start_ts, end_ts, source, closed_reason) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(s.project_code, atTs, s.end_ts, s.source, s.closed_reason ?? 'normal')
+  return Number(result.lastInsertRowid)
+}

@@ -1,7 +1,11 @@
 import { app, BrowserWindow, Menu, Tray, nativeImage } from 'electron'
 import { join } from 'node:path'
 
-export function createTray(win: BrowserWindow, onExportWeek: () => void): Tray {
+export function createTray(
+  win: BrowserWindow,
+  onExportWeek: () => void,
+  onOpenSettings: () => void
+): Tray {
   const iconPath = join(import.meta.dirname, '../../resources/icon.png')
   let image = nativeImage.createFromPath(iconPath)
   if (!image.isEmpty()) image = image.resize({ width: 16, height: 16 })
@@ -14,6 +18,7 @@ export function createTray(win: BrowserWindow, onExportWeek: () => void): Tray {
       click: () => (win.isVisible() ? win.hide() : win.show())
     },
     { label: 'Export week…', click: onExportWeek },
+    { label: 'Settings…', click: onOpenSettings },
     { type: 'separator' },
     {
       label: 'Quit timelog',

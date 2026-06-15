@@ -5,6 +5,7 @@ declare global {
     timelog: TimelogApi
     timelogEvents: {
       onOpenExportDialog(cb: () => void): () => void
+      onOpenSettings(cb: () => void): () => void
     }
   }
 }

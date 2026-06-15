@@ -31,18 +31,4 @@ export function todayTotalMs(state: TrackerState, code: string, nowMs: number): 
   return closed + open
 }
 
-export function formatClock(ms: number): string {
-  const total = Math.floor(ms / 1000)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  const pad = (n: number): string => String(n).padStart(2, '0')
-  return `${pad(h)}:${pad(m)}:${pad(s)}`
-}
-
-export function formatShort(ms: number): string {
-  const totalMinutes = Math.floor(ms / 60_000)
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`
-}
+export { formatClock, formatShort, formatHours, formatTimeOfDay } from '../../../shared/format'

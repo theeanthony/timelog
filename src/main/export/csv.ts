@@ -18,7 +18,8 @@ export { currentWeekStartIso } from '../../shared/week'
 export function computeWeekTotals(db: Db, weekStartIso: string): WeekTotals {
   const { fromTs, toTs } = weekRange(weekStartIso)
   const totals = totalsByProject(db, fromTs, toTs)
-  const projects = listProjects(db)
+  // Include archived projects so their logged time still exports.
+  const projects = listProjects(db, { includeArchived: true })
   const rows = projects
     .filter((p) => (totals[p.code] ?? 0) > 0)
     .map((p) => {

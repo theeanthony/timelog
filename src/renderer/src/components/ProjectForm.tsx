@@ -7,6 +7,8 @@ interface Props {
   onAdded: () => void
   onClose?: () => void
   autoFocus?: boolean
+  /** When set, the form edits this project instead of creating a new one. */
+  project?: Project
 }
 
 function nextUnusedColor(existing: Project[]): string {
@@ -14,10 +16,17 @@ function nextUnusedColor(existing: Project[]): string {
   return PALETTE.find((c) => !used.has(c)) ?? PALETTE[existing.length % PALETTE.length]
 }
 
-export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): React.JSX.Element {
-  const [code, setCode] = useState('')
-  const [label, setLabel] = useState('')
-  const [color, setColor] = useState(() => nextUnusedColor(existing))
+export function ProjectForm({
+  existing,
+  onAdded,
+  onClose,
+  autoFocus,
+  project
+}: Props): React.JSX.Element {
+  const editing = !!project
+  const [code, setCode] = useState(project?.code ?? '')
+  const [label, setLabel] = useState(project?.label ?? '')
+  const [color, setColor] = useState(() => project?.color ?? nextUnusedColor(existing))
   const [error, setError] = useState<string | null>(null)
 
   const submit = async (e: React.FormEvent): Promise<void> => {
@@ -25,6 +34,22 @@ export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): R
     const trimmedCode = code.trim()
     const trimmedLabel = label.trim() || trimmedCode
     if (!trimmedCode) return
+
+    if (editing) {
+      if (trimmedCode !== project.code) {
+        const result = await window.timelog.renameProject(project.code, trimmedCode)
+        if ('error' in result) {
+          setError(result.error)
+          return
+        }
+      }
+      await window.timelog.updateProject(trimmedCode, { label: trimmedLabel, color })
+      setError(null)
+      onAdded()
+      onClose?.()
+      return
+    }
+
     if (existing.some((p) => p.code === trimmedCode)) {
       setError('that charge code already exists')
       return
@@ -34,6 +59,14 @@ export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): R
     setLabel('')
     setError(null)
     onAdded()
+  }
+
+  const del = async (): Promise<void> => {
+    if (!project) return
+    // Non-destructive default: archive keeps the project's logged time.
+    await window.timelog.archiveProject(project.code, true)
+    onAdded()
+    onClose?.()
   }
 
   return (
@@ -46,6 +79,7 @@ export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): R
           onChange={(e) => setCode(e.target.value)}
           autoFocus={autoFocus}
           spellCheck={false}
+          aria-label="charge code"
         />
         <input
           className="input"
@@ -53,6 +87,7 @@ export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): R
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           spellCheck={false}
+          aria-label="label"
         />
       </div>
       <div className="form-row form-row--bottom">
@@ -63,6 +98,7 @@ export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): R
               type="button"
               role="radio"
               aria-checked={color === c}
+              aria-label={`color ${c}`}
               className={`color-swatch${color === c ? ' color-swatch--selected' : ''}`}
               style={{ background: c }}
               onClick={() => setColor(c)}
@@ -70,13 +106,18 @@ export function ProjectForm({ existing, onAdded, onClose, autoFocus }: Props): R
           ))}
         </div>
         <div className="form-actions">
+          {editing && (
+            <button type="button" className="btn btn--ghost btn--danger" onClick={del}>
+              archive
+            </button>
+          )}
           {onClose && (
             <button type="button" className="btn btn--ghost" onClick={onClose}>
-              done
+              {editing ? 'cancel' : 'done'}
             </button>
           )}
           <button type="submit" className="btn" disabled={!code.trim()}>
-            add
+            {editing ? 'save' : 'add'}
           </button>
         </div>
       </div>
