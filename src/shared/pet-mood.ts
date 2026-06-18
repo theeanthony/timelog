@@ -1,6 +1,6 @@
 import type { TrackerStatus } from './types'
 
-/** The 8 mood layers every pet sprite ships with. */
+/** The 10 mood layers every pet sprite ships with. */
 export type PetMood =
   | 'idle'
   | 'focused'
@@ -10,6 +10,8 @@ export type PetMood =
   | 'confused'
   | 'tired'
   | 'love'
+  | 'surprised' // a quick startle — used as a transient tap/fling reaction
+  | 'playful' // bouncy and mischievous — used as a transient reaction
 
 /** Moods during which the pet stands still rather than walking. */
 export const STATIONARY_MOODS: PetMood[] = ['sleep', 'tired', 'confused']

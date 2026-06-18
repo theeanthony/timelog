@@ -5,11 +5,17 @@ interface Props {
   mode: TrackerMode
   trackingMode: TrackingMode
   onOpenSettings: () => void
+  onMinimize: () => void
 }
 
 const COACH_KEY = 'timelog.coach.mode'
 
-export function Titlebar({ mode, trackingMode, onOpenSettings }: Props): React.JSX.Element {
+export function Titlebar({
+  mode,
+  trackingMode,
+  onOpenSettings,
+  onMinimize
+}: Props): React.JSX.Element {
   const [showCoach, setShowCoach] = useState(() => {
     try {
       return localStorage.getItem(COACH_KEY) !== '1'
@@ -40,6 +46,15 @@ export function Titlebar({ mode, trackingMode, onOpenSettings }: Props): React.J
         <i />
       </span>
       <span className="titlebar-name">timelog</span>
+      <button
+        type="button"
+        className="titlebar-min"
+        aria-label="minimize to bar"
+        title="Minimize to bar"
+        onClick={onMinimize}
+      >
+        ▭
+      </button>
       <button
         type="button"
         className="titlebar-gear"

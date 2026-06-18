@@ -75,6 +75,42 @@ export function approach(
   return { x: x + Math.sign(d) * maxStep, arrived: false }
 }
 
+/** Cruise speed (px/s) for swimming / flying critters. */
+export const DRIFT_SPEED = 26
+/** How briskly a drifting body's velocity eases toward its heading (per second). */
+export const DRIFT_ACCEL = 2.2
+
+/**
+ * Steer a gravity-free body toward (tx,ty) — the locomotion for swimmers and
+ * fliers. Velocity eases toward the target heading (so a flung body keeps its
+ * momentum and curves back to a cruise), slowing as it nears the target.
+ * Mutates `b` and returns whether it has effectively arrived.
+ *
+ * Units match the rest of the module: px, px/s, seconds.
+ */
+export function driftToward(
+  b: Body,
+  tx: number,
+  ty: number,
+  dt: number,
+  speed = DRIFT_SPEED,
+  accel = DRIFT_ACCEL
+): { arrived: boolean } {
+  const dx = tx - b.x
+  const dy = ty - b.y
+  const dist = Math.hypot(dx, dy)
+  // Desired velocity points at the target and tapers to 0 over the last ~speed/2 px.
+  const want = Math.min(speed, dist * 2)
+  const ux = dist > 0.0001 ? dx / dist : 0
+  const uy = dist > 0.0001 ? dy / dist : 0
+  const k = Math.min(1, accel * dt)
+  b.vx += (ux * want - b.vx) * k
+  b.vy += (uy * want - b.vy) * k
+  b.x += b.vx * dt
+  b.y += b.vy * dt
+  return { arrived: dist < 4 }
+}
+
 /**
  * Position along a parametric hop arc at progress `u` (0→1) between
  * (sx,sy) and (lx,ly), peaking `arc` px above the straight-line path.

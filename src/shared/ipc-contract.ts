@@ -4,10 +4,14 @@ import type {
   Project,
   RangeBreakdown,
   RangeUnit,
+  PanelView,
   Rule,
+  RuleField,
   Session,
   TrackerState,
   TrackingMode,
+  UnmatchedWindow,
+  UpdateStatus,
   WeekBreakdown,
   WeekTotals
 } from './types'
@@ -15,11 +19,13 @@ import type {
 export const IPC = {
   // main → renderer push
   stateUpdate: 'state:update',
+  updateStatus: 'update:status',
   // renderer → main commands
   getState: 'tracker:getState',
   setManualOverride: 'tracker:setManualOverride',
   clearOverride: 'tracker:clearOverride',
   setTrackingMode: 'tracker:setTrackingMode',
+  setPanelView: 'window:setView',
   listProjects: 'projects:list',
   addProject: 'projects:add',
   updateProject: 'projects:update',
@@ -31,8 +37,11 @@ export const IPC = {
   listRules: 'rules:list',
   addRule: 'rules:add',
   addRuleForTitle: 'rules:addForTitle',
+  addRuleForApp: 'rules:addForApp',
   updateRule: 'rules:update',
   deleteRule: 'rules:delete',
+  listUnmatched: 'unmatched:list',
+  assignUnmatched: 'unmatched:assign',
   listDaySessions: 'sessions:listDay',
   reassignSession: 'sessions:reassign',
   deleteSession: 'sessions:delete',
@@ -44,6 +53,8 @@ export const IPC = {
   getPrefs: 'prefs:get',
   setPrefs: 'prefs:set',
   getAppInfo: 'app:info',
+  checkForUpdates: 'update:check',
+  installUpdate: 'update:install',
   completeSetup: 'setup:complete',
   getWeekTotals: 'export:weekTotals',
   getWeekBreakdown: 'export:weekBreakdown',
@@ -69,6 +80,7 @@ export interface TimelogApi {
   setManualOverride(code: string): Promise<void>
   clearOverride(): Promise<void>
   setTrackingMode(mode: TrackingMode): Promise<void>
+  setPanelView(view: PanelView): Promise<void>
 
   listProjects(includeArchived?: boolean): Promise<Project[]>
   addProject(p: NewProject): Promise<void>
@@ -80,13 +92,22 @@ export interface TimelogApi {
   deleteProject(code: string, reassignTo?: string): Promise<void>
 
   listRules(projectCode?: string): Promise<Rule[]>
-  addRule(projectCode: string, pattern: string, priority?: number): Promise<number>
+  addRule(
+    projectCode: string,
+    pattern: string,
+    priority?: number,
+    field?: RuleField
+  ): Promise<number>
   addRuleForTitle(projectCode: string, title: string): Promise<number>
+  addRuleForApp(projectCode: string, appName: string): Promise<number>
   updateRule(
     id: number,
-    patch: { pattern?: string; priority?: number; enabled?: boolean }
+    patch: { pattern?: string; priority?: number; enabled?: boolean; field?: RuleField }
   ): Promise<void>
   deleteRule(id: number): Promise<void>
+
+  listUnmatched(): Promise<UnmatchedWindow[]>
+  assignUnmatched(app: string, title: string, code: string, field: RuleField): Promise<void>
 
   listDaySessions(dayStartTs: number): Promise<Session[]>
   reassignSession(id: number, code: string): Promise<void>
@@ -101,6 +122,13 @@ export interface TimelogApi {
   getPrefs(): Promise<Prefs>
   setPrefs(patch: Partial<Prefs>): Promise<Prefs>
   getAppInfo(): Promise<AppInfo>
+
+  /** Trigger a manual update check; live progress arrives via onUpdateStatus. */
+  checkForUpdates(): Promise<UpdateStatus>
+  /** Quit and install a downloaded update. */
+  installUpdate(): Promise<void>
+  /** Subscribe to update lifecycle pushes. Returns an unsubscribe fn. */
+  onUpdateStatus(cb: (s: UpdateStatus) => void): () => void
 
   completeSetup(trackingMode: TrackingMode): Promise<void>
   getWeekTotals(weekStartIso: string): Promise<WeekTotals>

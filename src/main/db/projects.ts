@@ -1,4 +1,4 @@
-import type { Project, Rule } from '../../shared/types'
+import type { Project, Rule, RuleField } from '../../shared/types'
 import type { Db } from './database'
 import { KEYS, getState, setState } from './app-state'
 
@@ -18,6 +18,7 @@ interface RuleRow {
   pattern: string
   priority: number
   enabled: number
+  field: string
 }
 
 function toProject(r: ProjectRow): Project {
@@ -182,36 +183,49 @@ function toRule(r: RuleRow): Rule {
     projectCode: r.project_code,
     pattern: r.pattern,
     priority: r.priority,
-    enabled: r.enabled === 1
+    enabled: r.enabled === 1,
+    field: (r.field as RuleField) ?? 'title'
   }
 }
 
-export function addRule(db: Db, projectCode: string, pattern: string, priority = 0): number {
+export function addRule(
+  db: Db,
+  projectCode: string,
+  pattern: string,
+  priority = 0,
+  field: RuleField = 'title'
+): number {
   const result = db
-    .prepare('INSERT INTO rules (project_code, pattern, priority) VALUES (?, ?, ?)')
-    .run(projectCode, pattern, priority)
+    .prepare('INSERT INTO rules (project_code, pattern, priority, field) VALUES (?, ?, ?, ?)')
+    .run(projectCode, pattern, priority, field)
   return Number(result.lastInsertRowid)
 }
 
 /** Make the currently-unmatched window title map to a project from now on. */
 export function addRuleForTitle(db: Db, projectCode: string, title: string): number {
   // Priority 1 so an explicit user pick beats the default code/label rule.
-  return addRule(db, projectCode, escapeRegex(title.trim()), 1)
+  return addRule(db, projectCode, escapeRegex(title.trim()), 1, 'title')
+}
+
+/** Map an entire app (e.g. 'Slack') to a project — catches all its windows. */
+export function addRuleForApp(db: Db, projectCode: string, appName: string): number {
+  return addRule(db, projectCode, escapeRegex(appName.trim()), 1, 'app')
 }
 
 export function updateRule(
   db: Db,
   id: number,
-  patch: { pattern?: string; priority?: number; enabled?: boolean }
+  patch: { pattern?: string; priority?: number; enabled?: boolean; field?: RuleField }
 ): void {
   const row = db.prepare('SELECT * FROM rules WHERE id = ?').get(id) as unknown as
     | RuleRow
     | undefined
   if (!row) return
-  db.prepare('UPDATE rules SET pattern = ?, priority = ?, enabled = ? WHERE id = ?').run(
+  db.prepare('UPDATE rules SET pattern = ?, priority = ?, enabled = ?, field = ? WHERE id = ?').run(
     patch.pattern ?? row.pattern,
     patch.priority ?? row.priority,
     patch.enabled === undefined ? row.enabled : patch.enabled ? 1 : 0,
+    patch.field ?? row.field,
     id
   )
 }
@@ -224,12 +238,12 @@ export function listRules(db: Db, projectCode?: string): Rule[] {
   const rows = (projectCode
     ? db
         .prepare(
-          'SELECT id, project_code, pattern, priority, enabled FROM rules WHERE project_code = ? ORDER BY priority DESC, id'
+          'SELECT id, project_code, pattern, priority, enabled, field FROM rules WHERE project_code = ? ORDER BY priority DESC, id'
         )
         .all(projectCode)
     : db
         .prepare(
-          'SELECT id, project_code, pattern, priority, enabled FROM rules ORDER BY priority DESC, id'
+          'SELECT id, project_code, pattern, priority, enabled, field FROM rules ORDER BY priority DESC, id'
         )
         .all()) as unknown as RuleRow[]
   return rows.map(toRule)
@@ -238,7 +252,7 @@ export function listRules(db: Db, projectCode?: string): Rule[] {
 export function listEnabledRules(db: Db): Rule[] {
   const rows = db
     .prepare(
-      'SELECT id, project_code, pattern, priority, enabled FROM rules WHERE enabled = 1 ORDER BY priority DESC, id'
+      'SELECT id, project_code, pattern, priority, enabled, field FROM rules WHERE enabled = 1 ORDER BY priority DESC, id'
     )
     .all() as unknown as RuleRow[]
   return rows.map(toRule)

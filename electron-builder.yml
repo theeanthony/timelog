@@ -35,5 +35,11 @@ mac:
 dmg:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
-# Local-only app: no auto-update, no publish target, no network at runtime.
-publish: null
+# GitHub Releases provider: emits latest.yml + *.blockmap so the installed NSIS
+# build can self-update with delta downloads (manual "Check for updates"). The
+# app never phones home on its own — updates only run when the user asks.
+# (The portable target can't auto-update; that's expected.)
+publish:
+  provider: github
+  owner: theeanthony
+  repo: timelog

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DWELL_MS, TICK_MS } from '../src/main/engine/tracker'
+import { addRule, addRuleForApp } from '../src/main/db/projects'
+import { listUnmatched } from '../src/main/db/unmatched'
 import { allSessions, makeRig } from './helpers'
 
 describe('auto tracking with dwell', () => {
@@ -68,6 +70,58 @@ describe('auto tracking with dwell', () => {
     expect(sessions).toHaveLength(1)
     expect(sessions[0].end_ts).not.toBeNull()
     expect(rig.tracker.getTrackerState().status).toBe('no_match')
+  })
+})
+
+describe('app-name matching, what-matched & no-match suggestions', () => {
+  it('matches on app name when the title alone would not', async () => {
+    const rig = makeRig()
+    addRule(rig.db, 'P-100', 'Figma', 1, 'app')
+    rig.tracker.reloadRules()
+    rig.windows.setWindow('Untitled design', 'Figma') // title matches nothing
+
+    await rig.step(1 + DWELL_MS / TICK_MS)
+    const sessions = allSessions(rig.db)
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].project_code).toBe('P-100')
+
+    const m = rig.tracker.getTrackerState().matchInfo
+    expect(m?.by).toBe('app')
+    expect(m?.value).toBe('Figma')
+  })
+
+  it('reports a title match in matchInfo', async () => {
+    const rig = makeRig()
+    rig.windows.setWindow('P-100 layout — AutoCAD', 'AutoCAD')
+    await rig.step(1 + DWELL_MS / TICK_MS)
+    const m = rig.tracker.getTrackerState().matchInfo
+    expect(m?.by).toBe('title')
+    expect(m?.value).toBe('P-100 layout — AutoCAD')
+  })
+
+  it('records an unmatched window and suggests a project by app-name overlap', async () => {
+    const rig = makeRig()
+    rig.windows.setWindow('weekly notes', 'P-100 Helper') // no title rule hits
+    await rig.step(1 + DWELL_MS / TICK_MS)
+
+    const state = rig.tracker.getTrackerState()
+    expect(state.status).toBe('no_match')
+    expect(state.suggestedProjectCode).toBe('P-100') // app name contains the code
+    expect(state.matchInfo).toBeNull()
+
+    const rows = listUnmatched(rig.db)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ app: 'P-100 Helper', title: 'weekly notes' })
+  })
+
+  it('teaching an app makes its windows auto-match', async () => {
+    const rig = makeRig()
+    addRuleForApp(rig.db, 'P-200', 'Slack')
+    rig.tracker.reloadRules()
+    rig.windows.setWindow('general channel', 'Slack')
+    await rig.step(1 + DWELL_MS / TICK_MS)
+    const sessions = allSessions(rig.db)
+    expect(sessions[0].project_code).toBe('P-200')
   })
 })
 

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export const SCHEMA_DDL = `
 CREATE TABLE IF NOT EXISTS projects (
@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS rules (
   project_code TEXT NOT NULL REFERENCES projects(code),
   pattern      TEXT NOT NULL,
   priority     INTEGER NOT NULL DEFAULT 0,
-  enabled      INTEGER NOT NULL DEFAULT 1
+  enabled      INTEGER NOT NULL DEFAULT 1,
+  field        TEXT NOT NULL DEFAULT 'title'
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -41,6 +42,14 @@ CREATE TABLE IF NOT EXISTS app_state (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS unmatched_windows (
+  app        TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  last_seen  INTEGER NOT NULL,
+  seen_count INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (app, title)
+);
 `
 
 /**
@@ -61,6 +70,19 @@ export const MIGRATIONS: { to: number; sql: string }[] = [
         gap_start_ts  INTEGER NOT NULL,
         gap_end_ts    INTEGER NOT NULL,
         resolved      INTEGER NOT NULL DEFAULT 0
+      );
+    `
+  },
+  {
+    to: 3,
+    sql: `
+      ALTER TABLE rules ADD COLUMN field TEXT NOT NULL DEFAULT 'title';
+      CREATE TABLE IF NOT EXISTS unmatched_windows (
+        app        TEXT NOT NULL,
+        title      TEXT NOT NULL,
+        last_seen  INTEGER NOT NULL,
+        seen_count INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (app, title)
       );
     `
   }
