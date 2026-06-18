@@ -25,5 +25,6 @@ export const KEYS = {
   trackingMode: 'tracking_mode',
   manualProjectCode: 'manual_project_code',
   setupComplete: 'setup_complete',
-  windowPosition: 'window_position'
+  windowPosition: 'window_position',
+  windowSize: 'window_size'
 } as const

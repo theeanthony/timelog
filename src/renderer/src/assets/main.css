@@ -52,9 +52,235 @@ button {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  isolation: isolate;
   background:
     radial-gradient(120% 60% at 50% -10%, rgba(99, 87, 211, 0.13), transparent 60%),
     linear-gradient(var(--bg), var(--bg-inset));
+}
+
+/* the active habitat backdrop — painted behind the UI, pets roam over it */
+.habitat-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.habitat-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.habitat-scene svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* invisible perch zones aligned to the scene; measured by the pet perch scanner */
+.habitat-perches {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ── ambient scene motion (fireflies, bubbles, snow, embers…) ─────────── */
+.ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient span {
+  position: absolute;
+  border-radius: 50%;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  will-change: transform, opacity, top;
+}
+
+.ambient--firefly span {
+  animation-name: amb-firefly;
+  box-shadow: 0 0 5px 1px currentColor;
+}
+.ambient--bubble span {
+  animation-name: amb-rise;
+  opacity: 0.7;
+}
+.ambient--ember span {
+  animation-name: amb-ember;
+  animation-timing-function: linear;
+  box-shadow: 0 0 6px 1px currentColor;
+}
+.ambient--snow span {
+  animation-name: amb-fall;
+  animation-timing-function: linear;
+}
+.ambient--spore span {
+  animation-name: amb-spore;
+  animation-timing-function: linear;
+}
+.ambient--dust span {
+  animation-name: amb-dust;
+}
+.ambient--twinkle span {
+  animation-name: amb-twinkle;
+}
+.ambient--pollen span {
+  animation-name: amb-spore;
+  opacity: 0.5;
+  box-shadow: 0 0 4px currentColor;
+}
+.ambient--glow span {
+  animation-name: amb-twinkle;
+  box-shadow: 0 0 9px 2px currentColor;
+}
+
+@keyframes amb-firefly {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.2;
+  }
+  25% {
+    transform: translate(8px, -6px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-4px, -12px);
+    opacity: 0.45;
+  }
+  75% {
+    transform: translate(6px, 4px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes amb-rise {
+  0% {
+    top: 108%;
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    top: -8%;
+    transform: translateX(-4px);
+    opacity: 0;
+  }
+}
+
+@keyframes amb-ember {
+  0% {
+    top: 104%;
+    transform: translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  100% {
+    top: 18%;
+    transform: translateX(-8px);
+    opacity: 0;
+  }
+}
+
+@keyframes amb-fall {
+  0% {
+    top: -8%;
+    transform: translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateX(10px);
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    top: 108%;
+    transform: translateX(-6px);
+    opacity: 0.2;
+  }
+}
+
+@keyframes amb-spore {
+  0% {
+    transform: translate(0, 6px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(14px, -30px);
+    opacity: 0;
+  }
+}
+
+@keyframes amb-dust {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate(10px, -14px);
+    opacity: 0.4;
+  }
+}
+
+@keyframes amb-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient span {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+/* time-of-day wash multiplied over a scene (night/dawn/dusk tint) */
+.daynight {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  transition:
+    background 0.6s ease,
+    opacity 0.6s ease;
 }
 
 .app[data-mode='manual'] {
@@ -710,6 +936,11 @@ button {
   max-height: 88%;
 }
 
+/* the zoo wants room — let it use nearly the whole panel, habitats grow to fill */
+.sheet--zoo {
+  max-height: 94%;
+}
+
 .week-chart {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -831,6 +1062,116 @@ html[data-theme='light'] {
 
 .titlebar-gear + .mode-badge {
   margin-left: 8px;
+}
+
+.titlebar-min {
+  -webkit-app-region: no-drag;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.titlebar-min:hover {
+  color: var(--accent-bright);
+}
+
+/* min sits at the start of the right cluster; gear follows it (not auto). */
+.titlebar-min + .titlebar-gear {
+  margin-left: 6px;
+}
+
+/* ── compact / minimized bar ──────────────────────────────── */
+
+.app--compact {
+  background: linear-gradient(var(--bg-raised), var(--bg-inset));
+}
+
+/* The bar itself is click-to-restore (NOT a drag region — that would swallow
+   the hover/click and trap you in minimized mode). */
+.compact-bar {
+  -webkit-app-region: no-drag;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.compact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Only the dot is the window-drag handle. */
+.compact-dot {
+  -webkit-app-region: drag;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  cursor: grab;
+}
+
+.compact-timer {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.app--compact[data-mode='manual'] .compact-timer:not(.compact-timer--stopped) {
+  color: var(--manual-bright);
+}
+
+.app--compact[data-status='idle'] .compact-timer,
+.app--compact[data-status='locked'] .compact-timer {
+  opacity: 0.4;
+}
+
+.compact-timer--stopped {
+  color: var(--text-dim);
+}
+
+.compact-restore {
+  -webkit-app-region: no-drag;
+  margin-left: auto;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-dim);
+  padding: 0 2px;
+}
+
+.compact-restore:hover {
+  color: var(--accent-bright);
+}
+
+.compact-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 17px;
+}
+
+.compact-label {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.compact-today {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
 }
 
 .coach {
@@ -981,6 +1322,52 @@ html[data-theme='light'] {
 .teach-picker {
   justify-content: center;
   margin-top: 9px;
+}
+
+/* one-tap suggested project for a no-match window */
+.suggest-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--accent-bright);
+  border: 1px solid color-mix(in srgb, var(--accent-bright) 55%, transparent);
+  border-radius: 5px;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--accent-deep) 18%, transparent);
+}
+
+.suggest-cta:hover {
+  background: color-mix(in srgb, var(--accent-deep) 32%, transparent);
+}
+
+.suggest-cta b {
+  font-weight: 600;
+}
+
+/* "what matched" caption under the clock */
+.match-note {
+  display: block;
+  max-width: 240px;
+  margin: 5px auto 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-note:hover {
+  color: var(--text);
+}
+
+.match-fix {
+  color: var(--accent-bright);
 }
 
 /* ── project list: search, actions, drag, empty ───────────── */
@@ -1204,11 +1591,17 @@ html[data-theme='light'] {
 
 .rule-row {
   display: grid;
-  grid-template-columns: auto auto 1fr auto auto;
+  grid-template-columns: auto auto auto 1fr auto auto;
   align-items: center;
   gap: 8px;
   padding: 7px 0;
   border-bottom: 1px solid var(--hairline);
+}
+
+.rule-field {
+  font-size: 10px;
+  padding: 4px 5px;
+  min-width: 0;
 }
 
 .rule-row--off {
@@ -1247,6 +1640,56 @@ html[data-theme='light'] {
   gap: 7px;
   padding: 10px 14px 12px;
   border-top: 1px solid var(--hairline);
+}
+
+/* ── unmatched windows review ──────────────────────────────── */
+
+.unmatched {
+  border-top: 1px solid var(--hairline);
+  padding: 8px 14px 12px;
+}
+
+.unmatched-head {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding-bottom: 4px;
+}
+
+.unmatched-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.um-app {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  color: var(--text);
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.um-title {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.um-count {
+  font-size: 9.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── day timeline ─────────────────────────────────────────── */
@@ -1501,8 +1944,8 @@ select:focus-visible,
   position: absolute;
   top: 0;
   left: 0;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   pointer-events: auto;
   cursor: grab;
   touch-action: none;
@@ -1532,54 +1975,21 @@ select:focus-visible,
 .pet[data-mood='sleep'] .m-sleep,
 .pet[data-mood='confused'] .m-confused,
 .pet[data-mood='tired'] .m-tired,
-.pet[data-mood='love'] .m-love {
+.pet[data-mood='love'] .m-love,
+.pet[data-mood='surprised'] .m-surprised,
+.pet[data-mood='playful'] .m-playful {
   display: block;
 }
 
-/* Position + facing are driven imperatively (transform) by PetLayer's rAF loop;
-   CSS only animates the legs/tail while a pet is actually moving. */
-.pet--moving .leg-front,
-.pet--moving .leg-back,
-.pet--moving .tail {
-  transform-box: fill-box;
-}
-
-.pet--moving .leg-front {
-  animation: pet-step 0.45s ease-in-out infinite;
-}
-
-.pet--moving .leg-back {
-  animation: pet-step 0.45s ease-in-out infinite 0.225s;
-}
-
-.pet--moving .tail {
-  transform-origin: bottom left;
-  animation: pet-wag 0.9s ease-in-out infinite;
-}
-
-@keyframes pet-step {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes pet-wag {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  50% {
-    transform: rotate(-8deg);
-  }
-}
+/* Position + facing are driven imperatively (transform) by PetLayer's rAF loop.
+   The sprite's *inner* motion — breathing by mood, locomotion-aware limbs, and
+   signature one-shot moves — is pure CSS, shared with the diorama .walker in the
+   "sprite motion" section below (keyed on data-mood / data-loco / data-moving /
+   data-act set on the .pet element). */
 
 .pet-bubble {
   position: absolute;
-  bottom: 28px;
+  bottom: 22px;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
@@ -1592,6 +2002,1471 @@ select:focus-visible,
   pointer-events: none;
   z-index: 2;
   animation: queue-in 0.15s ease;
+}
+
+/* shiny variants: a soft glow that shimmers (static glow under reduced motion) */
+.pet--shiny .pet-svg {
+  filter: drop-shadow(0 0 3px var(--pet-accent)) drop-shadow(0 0 6px var(--pet-accent));
+  animation: pet-shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes pet-shimmer {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px var(--pet-accent));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px var(--pet-accent)) drop-shadow(0 0 10px var(--pet-accent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet--shiny .pet-svg {
+    animation: none;
+    filter: drop-shadow(0 0 4px var(--pet-accent));
+  }
+}
+
+/* ── sprite motion (shared: panel .pet + diorama .walker) ─────────────────
+   data-mood drives breathing, data-loco + data-moving drive the limbs, and a
+   one-shot data-act plays a signature move. Position/facing stay imperative on
+   the outer element; these rules animate the inner svg + its parts only. */
+
+.walker,
+.pet .pet-svg svg {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+}
+.walker .leg-front,
+.walker .leg-back,
+.pet .leg-front,
+.pet .leg-back {
+  transform-box: fill-box;
+  transform-origin: 50% 16%;
+}
+.walker .tail,
+.pet .tail {
+  transform-box: fill-box;
+  transform-origin: 86% 84%;
+}
+
+/* mood → body motion */
+.walker[data-mood='idle'],
+.pet[data-mood='idle'] .pet-svg svg {
+  animation: bob 1.6s ease-in-out infinite;
+}
+.walker[data-mood='focused'],
+.pet[data-mood='focused'] .pet-svg svg {
+  animation: breathe 2.8s ease-in-out infinite;
+}
+.walker[data-mood='happy'],
+.pet[data-mood='happy'] .pet-svg svg {
+  animation: hopB 0.9s ease-in-out infinite;
+}
+.walker[data-mood='celebrate'],
+.pet[data-mood='celebrate'] .pet-svg svg {
+  animation: jumpB 1s cubic-bezier(0.25, 0.7, 0.35, 1) infinite;
+}
+.walker[data-mood='sleep'],
+.pet[data-mood='sleep'] .pet-svg svg {
+  animation: snooze 3.6s ease-in-out infinite;
+}
+.walker[data-mood='confused'],
+.pet[data-mood='confused'] .pet-svg svg {
+  animation: tilt 2.6s ease-in-out infinite;
+}
+.walker[data-mood='tired'],
+.pet[data-mood='tired'] .pet-svg svg {
+  animation: trudge 2s ease-in-out infinite;
+}
+.walker[data-mood='love'],
+.pet[data-mood='love'] .pet-svg svg {
+  animation: loveSway 2s ease-in-out infinite;
+}
+.walker[data-mood='surprised'],
+.pet[data-mood='surprised'] .pet-svg svg {
+  animation: startle 2.4s ease-in-out infinite;
+}
+.walker[data-mood='playful'],
+.pet[data-mood='playful'] .pet-svg svg {
+  animation: wiggle 1.1s ease-in-out infinite;
+}
+
+/* locomotion → limb motion */
+.walker[data-loco='walk'][data-moving='1'] .leg-front,
+.pet[data-loco='walk'][data-moving='1'] .leg-front {
+  animation: legA 0.42s ease-in-out infinite;
+}
+.walker[data-loco='walk'][data-moving='1'] .leg-back,
+.pet[data-loco='walk'][data-moving='1'] .leg-back {
+  animation: legB 0.42s ease-in-out infinite;
+}
+.walker[data-loco='walk'][data-moving='1'] .tail,
+.pet[data-loco='walk'][data-moving='1'] .tail {
+  animation: sway 1s ease-in-out infinite;
+}
+.walker[data-loco='walk'] .tail,
+.pet[data-loco='walk'] .tail {
+  animation: sway 2.2s ease-in-out infinite;
+}
+.walker[data-loco='fly'] .leg-front,
+.walker[data-loco='fly'] .leg-back,
+.pet[data-loco='fly'] .leg-front,
+.pet[data-loco='fly'] .leg-back {
+  animation: flap 0.24s ease-in-out infinite;
+}
+.walker[data-loco='fly'][data-moving='1'] .leg-front,
+.walker[data-loco='fly'][data-moving='1'] .leg-back,
+.pet[data-loco='fly'][data-moving='1'] .leg-front,
+.pet[data-loco='fly'][data-moving='1'] .leg-back {
+  animation: flap 0.17s ease-in-out infinite;
+}
+.walker[data-loco='fly'] .tail,
+.pet[data-loco='fly'] .tail {
+  animation: flutterT 0.5s ease-in-out infinite;
+}
+.walker[data-loco='swim'] .leg-front,
+.walker[data-loco='swim'] .leg-back,
+.pet[data-loco='swim'] .leg-front,
+.pet[data-loco='swim'] .leg-back {
+  animation: finwig 0.7s ease-in-out infinite;
+}
+.walker[data-loco='swim'] .tail,
+.pet[data-loco='swim'] .tail {
+  animation: finwig 0.6s ease-in-out infinite;
+}
+
+/* signature one-shot acts (override body while data-act is present) */
+.walker[data-act='hop'],
+.pet[data-act='hop'] .pet-svg svg {
+  animation: actHop 0.7s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.walker[data-act='bound'],
+.pet[data-act='bound'] .pet-svg svg {
+  animation: actBound 0.7s ease-in-out;
+}
+.walker[data-act='pounce'],
+.pet[data-act='pounce'] .pet-svg svg {
+  animation: actPounce 0.8s ease-in-out;
+}
+.walker[data-act='dart'],
+.pet[data-act='dart'] .pet-svg svg {
+  animation: actDart 0.55s ease-out;
+}
+.walker[data-act='soar'],
+.pet[data-act='soar'] .pet-svg svg {
+  animation: actSoar 0.9s ease-in-out;
+}
+.walker[data-act='flutter'],
+.pet[data-act='flutter'] .pet-svg svg {
+  animation: actFlutter 0.7s ease-in-out;
+}
+.walker[data-act='swing'],
+.pet[data-act='swing'] .pet-svg svg {
+  animation: actSwing 0.8s ease-in-out;
+}
+.walker[data-act='slither'],
+.pet[data-act='slither'] .pet-svg svg {
+  animation: actSlither 0.8s ease-in-out;
+}
+.walker[data-act='headbutt'],
+.pet[data-act='headbutt'] .pet-svg svg {
+  animation: actHead 0.6s ease-in-out;
+}
+.walker[data-act='roll'],
+.pet[data-act='roll'] .pet-svg svg {
+  animation: actRoll 0.8s ease-in-out;
+}
+.walker[data-act='slide'],
+.pet[data-act='slide'] .pet-svg svg {
+  animation: actSlide 0.8s ease-out;
+}
+.walker[data-act='ooze'],
+.pet[data-act='ooze'] .pet-svg svg {
+  animation: actOoze 1s ease-in-out;
+}
+
+/* held performance moves (diorama only — pets perform on props) */
+.walker[data-act='p-climb'] {
+  transform-origin: 50% 50%;
+  animation: perfClimb 1s ease-in-out infinite;
+}
+.walker[data-act='p-swing'] {
+  transform-origin: 50% 8%;
+  animation: perfSwing 1.8s ease-in-out infinite;
+}
+.walker[data-act='p-surf'] {
+  animation: perfSurf 1.6s ease-in-out infinite;
+}
+.walker[data-act='p-bask'] {
+  transform-origin: 50% 92%;
+  animation: perfBask 2.6s ease-in-out infinite;
+}
+.walker[data-act='p-nap'] {
+  transform-origin: 50% 92%;
+  animation: perfNap 3.4s ease-in-out infinite;
+}
+.walker[data-act='p-drink'] {
+  transform-origin: 60% 80%;
+  animation: perfDrink 1.5s ease-in-out infinite;
+}
+.walker[data-act='p-dig'] {
+  transform-origin: 50% 92%;
+  animation: perfDig 0.5s ease-in-out infinite;
+}
+.walker[data-act='p-splash'] {
+  animation: perfSplash 0.8s ease-in-out infinite;
+}
+.walker[data-act='p-bounce'] {
+  transform-origin: 50% 92%;
+  animation: perfBounce 1s cubic-bezier(0.3, 0.7, 0.3, 1) infinite;
+}
+.walker[data-act='p-glow'] {
+  animation: perfGlow 1.6s ease-in-out infinite;
+}
+.walker[data-act='p-gaze'] {
+  transform-origin: 50% 80%;
+  animation: perfGaze 3s ease-in-out infinite;
+}
+.walker[data-act='p-hang'] {
+  transform-origin: 50% 10%;
+  animation: perfHang 2.4s ease-in-out infinite;
+}
+.walker[data-act='p-perch'] {
+  transform-origin: 50% 92%;
+  animation: perfPerch 2.6s ease-in-out infinite;
+}
+.walker[data-act='p-slide'] {
+  animation: perfSlide 1.6s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.04);
+  }
+}
+@keyframes hopB {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  45% {
+    transform: translateY(-7px) scaleY(1.04);
+  }
+  60% {
+    transform: translateY(0) scaleY(0.96);
+  }
+}
+@keyframes jumpB {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  40% {
+    transform: translateY(-13px) scaleY(1.07);
+  }
+  62% {
+    transform: translateY(0) scaleY(0.93);
+  }
+}
+@keyframes snooze {
+  0%,
+  100% {
+    transform: translateY(1px) scaleY(0.99);
+  }
+  50% {
+    transform: translateY(-1px) scaleY(1.02);
+  }
+}
+@keyframes tilt {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes trudge {
+  0%,
+  100% {
+    transform: translateY(1px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-1px) rotate(1deg);
+  }
+}
+@keyframes loveSway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(4deg);
+  }
+}
+@keyframes startle {
+  0%,
+  8% {
+    transform: translateY(0) scaleY(1);
+  }
+  3% {
+    transform: translateY(-4px) scaleY(1.06);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes legA {
+  0%,
+  100% {
+    transform: rotate(20deg);
+  }
+  50% {
+    transform: rotate(-20deg);
+  }
+}
+@keyframes legB {
+  0%,
+  100% {
+    transform: rotate(-20deg);
+  }
+  50% {
+    transform: rotate(20deg);
+  }
+}
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+@keyframes flap {
+  0%,
+  100% {
+    transform: rotate(-26deg);
+  }
+  50% {
+    transform: rotate(20deg);
+  }
+}
+@keyframes flutterT {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes finwig {
+  0%,
+  100% {
+    transform: rotate(-9deg);
+  }
+  50% {
+    transform: rotate(9deg);
+  }
+}
+@keyframes actHop {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  20% {
+    transform: translateY(2px) scaleY(0.86);
+  }
+  55% {
+    transform: translateY(-16px) scaleY(1.08);
+  }
+  85% {
+    transform: translateY(0) scaleY(0.95);
+  }
+}
+@keyframes actBound {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  30% {
+    transform: translate(6px, -10px) rotate(-6deg);
+  }
+  60% {
+    transform: translate(12px, 0);
+  }
+  80% {
+    transform: translate(6px, 0);
+  }
+}
+@keyframes actPounce {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  25% {
+    transform: translateY(3px) scaleY(0.8);
+  }
+  55% {
+    transform: translate(8px, -10px) scaleY(1.1);
+  }
+  80% {
+    transform: translateY(0) scaleY(0.95);
+  }
+}
+@keyframes actDart {
+  0% {
+    transform: translateX(0);
+  }
+  40% {
+    transform: translateX(14px) scaleX(1.04);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes actSoar {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  40% {
+    transform: translateY(-14px) rotate(-8deg);
+  }
+  70% {
+    transform: translateY(-6px) rotate(-3deg);
+  }
+}
+@keyframes actFlutter {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-7px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  75% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes actSwing {
+  0%,
+  100% {
+    transform: rotate(0) translateY(0);
+  }
+  30% {
+    transform: rotate(-14deg) translateY(-4px);
+  }
+  65% {
+    transform: rotate(12deg) translateY(-4px);
+  }
+}
+@keyframes actSlither {
+  0%,
+  100% {
+    transform: skewX(0);
+  }
+  30% {
+    transform: skewX(10deg);
+  }
+  65% {
+    transform: skewX(-10deg);
+  }
+}
+@keyframes actHead {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  40% {
+    transform: translateX(11px) rotate(8deg);
+  }
+  70% {
+    transform: translateX(-3px) rotate(-3deg);
+  }
+}
+@keyframes actRoll {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes actSlide {
+  0% {
+    transform: translate(0, 0) scaleY(1);
+  }
+  30% {
+    transform: translate(4px, 2px) scaleY(0.82);
+  }
+  100% {
+    transform: translate(22px, 2px) scaleY(0.9);
+  }
+}
+@keyframes actOoze {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1.12, 0.86);
+  }
+  70% {
+    transform: scale(0.94, 1.06);
+  }
+}
+@keyframes perfClimb {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(3deg);
+  }
+}
+@keyframes perfSwing {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
+}
+@keyframes perfSurf {
+  0%,
+  100% {
+    transform: translateX(-9px) translateY(1px) rotate(-7deg);
+  }
+  50% {
+    transform: translateX(9px) translateY(-2px) rotate(7deg);
+  }
+}
+@keyframes perfBask {
+  0%,
+  100% {
+    transform: rotate(-7deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(-7deg) scaleY(1.04);
+  }
+}
+@keyframes perfNap {
+  0%,
+  100% {
+    transform: scale(1.05, 0.9) translateY(2px);
+  }
+  50% {
+    transform: scale(1.02, 0.95) translateY(0);
+  }
+}
+@keyframes perfDrink {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  40% {
+    transform: rotate(13deg) translateY(3px);
+  }
+}
+@keyframes perfDig {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  40% {
+    transform: translateY(5px) scaleY(0.88);
+  }
+}
+@keyframes perfSplash {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-11px);
+  }
+}
+@keyframes perfBounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  30% {
+    transform: translateY(7px) scale(1.1, 0.85);
+  }
+  60% {
+    transform: translateY(-15px) scale(0.9, 1.13);
+  }
+}
+@keyframes perfGlow {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+@keyframes perfGaze {
+  0%,
+  100% {
+    transform: rotate(-11deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+@keyframes perfHang {
+  0%,
+  100% {
+    transform: rotate(176deg);
+  }
+  50% {
+    transform: rotate(184deg);
+  }
+}
+@keyframes perfPerch {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+@keyframes perfSlide {
+  0% {
+    transform: translateX(-12px) rotate(-2deg) scaleY(1);
+  }
+  50% {
+    transform: translateX(12px) rotate(2deg) scaleY(0.92);
+  }
+  100% {
+    transform: translateX(-12px) rotate(-2deg) scaleY(1);
+  }
+}
+
+/* ── living-habitat diorama (roaming residents + interactive props + events) ── */
+
+.diorama-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.diorama-layer .field {
+  position: absolute;
+  inset: 0;
+}
+.diorama-layer .props {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.diorama-layer .events {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* interactive variant (Zoo): taps on empty scene + props are live */
+.diorama-layer--interactive {
+  pointer-events: none;
+}
+.diorama-layer--interactive .field,
+.diorama-layer--interactive .prop {
+  pointer-events: auto;
+}
+.diorama-layer.paused *,
+.diorama-layer.paused {
+  animation-play-state: paused !important;
+}
+
+.creature {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 72px;
+  will-change: transform;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35));
+}
+.creature svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.creature.aglow {
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 9px color-mix(in oklab, var(--pet-accent), transparent 25%));
+}
+.walker .mood {
+  display: none;
+}
+.walker[data-mood='idle'] .m-idle,
+.walker[data-mood='focused'] .m-focused,
+.walker[data-mood='happy'] .m-happy,
+.walker[data-mood='celebrate'] .m-celebrate,
+.walker[data-mood='sleep'] .m-sleep,
+.walker[data-mood='confused'] .m-confused,
+.walker[data-mood='tired'] .m-tired,
+.walker[data-mood='love'] .m-love,
+.walker[data-mood='surprised'] .m-surprised,
+.walker[data-mood='playful'] .m-playful {
+  display: block;
+}
+
+/* interactive props — environment objects pets perform on */
+.prop {
+  position: absolute;
+  cursor: pointer;
+}
+.prop-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.prop-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.32));
+}
+.prop-halo {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 70%);
+  opacity: 0.5;
+  animation: haloPulse 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.prop-lbl {
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(10, 9, 13, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 3px 8px;
+  opacity: 0;
+  transition: opacity 0.16s;
+  pointer-events: none;
+  z-index: 3;
+}
+.prop:hover .prop-lbl {
+  opacity: 1;
+}
+.prop:hover .prop-art svg {
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.32)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+}
+.prop.claimed .prop-halo {
+  opacity: 0.9;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--pet-accent), transparent 35%),
+    transparent 70%
+  );
+}
+.prop.active .prop-halo {
+  opacity: 0;
+}
+@keyframes haloPulse {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* prop at-rest idle motion (always alive) */
+.prop-vine .prop-art {
+  transform-origin: 50% 1%;
+  animation: vineRest 3.6s ease-in-out infinite;
+}
+.prop-wave .wv-front {
+  animation: wvRest 3.4s ease-in-out infinite;
+}
+.prop-wave .wv-back {
+  animation: wvRest 4.2s ease-in-out infinite reverse;
+}
+.prop-cloud .prop-art {
+  animation: cloudFloat 4.6s ease-in-out infinite;
+}
+.prop-crystal .cry-glow {
+  transform-origin: 50% 60%;
+  animation: cryRest 3.2s ease-in-out infinite;
+}
+.prop-stars .tw {
+  transform-origin: 50% 50%;
+  animation: twk 2.4s ease-in-out infinite;
+}
+.prop-trunk .canopy {
+  transform-origin: 50% 100%;
+  animation: canopyRest 4s ease-in-out infinite;
+}
+.prop-pool .rip,
+.prop-pads .rip {
+  transform-origin: 50% 50%;
+  animation: ripRest 3.4s ease-out infinite;
+}
+.prop-slope .spark {
+  animation: twk 2.2s ease-in-out infinite;
+}
+.prop-sunbeam .beam {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: beamRest 3.6s ease-in-out infinite;
+}
+.prop-lava .lava-melt {
+  transform-origin: 50% 50%;
+  animation: lavaRest 2.8s ease-in-out infinite;
+}
+.prop-lava .lava-b1,
+.prop-lava .lava-b2 {
+  opacity: 0;
+}
+.prop-coral .prop-art,
+.prop-ledge .prop-art {
+  animation: cloudFloat 5.4s ease-in-out infinite;
+}
+@keyframes vineRest {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes wvRest {
+  0%,
+  100% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+}
+@keyframes cloudFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes cryRest {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+@keyframes twk {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+@keyframes canopyRest {
+  0%,
+  100% {
+    transform: skewX(-1.5deg);
+  }
+  50% {
+    transform: skewX(1.5deg);
+  }
+}
+@keyframes ripRest {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+@keyframes beamRest {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+@keyframes lavaRest {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* prop active motion — reacts while a pet is using it */
+.prop.active .prop-art {
+  animation: none;
+}
+.prop-vine.active .prop-art {
+  transform-origin: 50% 1%;
+  animation: vineSwing 1.8s ease-in-out infinite;
+}
+.prop-wave.active .wv-front {
+  animation: wvSurfF 1.5s ease-in-out infinite;
+}
+.prop-wave.active .wv-back {
+  animation: wvSurfB 1.5s ease-in-out infinite;
+}
+.prop-wave.active .wv-crest {
+  transform-origin: 50% 100%;
+  animation: crestCurl 1.5s ease-in-out infinite;
+}
+.prop-cloud.active .cloud-body {
+  transform-origin: 50% 100%;
+  animation: cloudSquish 1s cubic-bezier(0.3, 0.7, 0.3, 1) infinite;
+}
+.prop-crystal.active .cry-glow {
+  animation: cryFlare 1s ease-in-out infinite;
+}
+.prop-crystal.active {
+  filter: drop-shadow(0 0 12px rgba(111, 224, 255, 0.7));
+}
+.prop-mound.active .prop-art {
+  animation: moundShake 0.26s ease-in-out infinite;
+}
+.prop-mound.active .hole {
+  animation: holeGrow 1s ease-out infinite;
+}
+.prop-pool.active .rip,
+.prop-pads.active .rip {
+  animation: ripActive 1s ease-out infinite;
+}
+.prop-pads.active .pad {
+  transform-origin: 50% 50%;
+  animation: padBob 0.9s ease-in-out infinite;
+}
+.prop-branch.active .br-bend {
+  animation: branchBend 1.6s ease-in-out infinite;
+}
+.prop-trunk.active .canopy {
+  animation: canopyShake 0.4s ease-in-out infinite;
+}
+.prop-slope.active .spark {
+  animation: slopeSpark 0.5s ease-in-out infinite;
+}
+.prop-stars.active .star-grp {
+  animation: starsBright 1.2s ease-in-out infinite;
+}
+.prop-stalactite.active .drip {
+  animation: dripFall 1.4s ease-in infinite;
+}
+.prop-sunbeam.active .beam {
+  animation: beamActive 1.7s ease-in-out infinite;
+}
+.prop-lava.active .lava-melt {
+  animation: lavaActive 1.4s ease-in-out infinite;
+}
+.prop-lava.active .lava-b1 {
+  animation: lavaBub 1.3s ease-in infinite;
+}
+.prop-lava.active .lava-b2 {
+  animation: lavaBub 1.6s ease-in 0.3s infinite;
+}
+.prop-lava.active {
+  filter: drop-shadow(0 0 12px rgba(255, 110, 40, 0.6));
+}
+@keyframes vineSwing {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
+}
+@keyframes wvSurfF {
+  0%,
+  100% {
+    transform: translateX(-12px) translateY(2px);
+  }
+  50% {
+    transform: translateX(12px) translateY(-3px);
+  }
+}
+@keyframes wvSurfB {
+  0%,
+  100% {
+    transform: translateX(10px);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}
+@keyframes crestCurl {
+  0%,
+  100% {
+    transform: scale(1, 1) translateX(-6px);
+  }
+  50% {
+    transform: scale(1.2, 1.25) translateX(8px);
+  }
+}
+@keyframes cloudSquish {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  35% {
+    transform: scaleY(0.78) scaleX(1.12);
+  }
+  65% {
+    transform: scaleY(1.08) scaleX(0.95);
+  }
+}
+@keyframes cryFlare {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+@keyframes moundShake {
+  0%,
+  100% {
+    transform: translateX(-1.5px);
+  }
+  50% {
+    transform: translateX(1.5px);
+  }
+}
+@keyframes holeGrow {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+@keyframes ripActive {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+@keyframes padBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes branchBend {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+@keyframes canopyShake {
+  0%,
+  100% {
+    transform: translateX(-2px) skewX(-2deg);
+  }
+  50% {
+    transform: translateX(2px) skewX(2deg);
+  }
+}
+@keyframes slopeSpark {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes starsBright {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+@keyframes dripFall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+}
+@keyframes beamActive {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.09);
+  }
+}
+@keyframes lavaActive {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.05);
+  }
+}
+@keyframes lavaBub {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.4);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-11px) scale(1);
+  }
+}
+
+/* periodic environment events + tap ripple */
+.fx-ripple {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  transform: translate(-50%, -50%);
+  animation: dio-ripple 0.75s ease-out forwards;
+}
+@keyframes dio-ripple {
+  0% {
+    width: 8px;
+    height: 8px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 120px;
+    height: 120px;
+    opacity: 0;
+  }
+}
+.evt-shoot {
+  position: absolute;
+  left: var(--sx);
+  top: var(--sy);
+  width: 60px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fff);
+  box-shadow: 0 0 8px #fff;
+  transform: rotate(28deg);
+  animation: shoot 1.2s ease-in forwards;
+}
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: translate(-30px, -30px) rotate(28deg) scaleX(0.3);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(120px, 90px) rotate(28deg) scaleX(1);
+  }
+}
+.evt-erupt {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 150, 60, 0.55), transparent 65%);
+  animation: erupt 1.4s ease-out forwards;
+}
+@keyframes erupt {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+}
+.evt-ember {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ff8a3c;
+  box-shadow: 0 0 8px #ff6a2c;
+  transform: translate(-50%, -50%);
+  animation: emberUp 1.3s ease-out forwards;
+}
+@keyframes emberUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--ex)), -160%);
+  }
+}
+.evt-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46%;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(190, 233, 255, 0.18), transparent);
+  animation: evtwave 3s ease-in-out forwards;
+}
+@keyframes evtwave {
+  0% {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(30%);
+    opacity: 0;
+  }
+}
+.evt-leaf {
+  position: absolute;
+  top: -10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 60% 0 60% 0;
+  background: #7fae5a;
+  opacity: 0.85;
+  animation: leafFall var(--ld) ease-in forwards;
+}
+@keyframes leafFall {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(var(--lx), 360px) rotate(220deg);
+    opacity: 0;
+  }
+}
+.evt-gust {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 55%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  animation: evtwave 2.2s ease-in-out forwards;
+}
+.evt-ripple2 {
+  position: absolute;
+  left: var(--rx);
+  top: var(--ry);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  animation: dio-ripple 1.7s ease-out forwards;
+}
+.evt-aurora {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 48%;
+  mix-blend-mode: screen;
+  background: linear-gradient(
+    120deg,
+    rgba(94, 200, 194, 0),
+    rgba(94, 200, 194, 0.22),
+    rgba(167, 139, 250, 0.22),
+    rgba(94, 200, 194, 0)
+  );
+  animation: aurora 4.2s ease-in-out forwards;
+}
+@keyframes aurora {
+  0% {
+    opacity: 0;
+    transform: translateX(-8%);
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(8%);
+  }
+}
+.evt-cryspulse {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 70%, rgba(111, 224, 255, 0.22), transparent 55%);
+  animation: erupt 2.2s ease-in-out forwards;
+}
+.evt-flicker {
+  position: absolute;
+  left: var(--fx);
+  top: var(--fy);
+  width: 7px;
+  height: 9px;
+  background: #ffd98a;
+  box-shadow: 0 0 10px 2px #ffce6a;
+  animation: flick 0.9s ease-in-out forwards;
+}
+@keyframes flick {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.evt-heat {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: overlay;
+  background: linear-gradient(180deg, transparent 50%, rgba(255, 220, 150, 0.16));
+  animation: erupt 2.6s ease-in-out forwards;
+}
+.evt-lamp {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 52% 36%, rgba(255, 210, 130, 0.18), transparent 50%);
+  animation: flick 1.6s ease-in-out forwards;
+}
+.evt-puff {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(220, 210, 190, 0.7);
+  transform: translate(-50%, -50%);
+  animation: puffUp 0.8s ease-out forwards;
+}
+@keyframes puffUp {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--px)), -180%) scale(1.3);
+  }
 }
 
 /* ── appearance settings ──────────────────────────────────── */
@@ -1675,4 +3550,453 @@ select:focus-visible,
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* ── zoo ──────────────────────────────────────────────────── */
+
+/* static sprite preview (mirrors the .pet mood-layer mechanism, no animation) */
+.vsprite {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  color: #9aa0ad;
+}
+
+.vsprite .pet-svg,
+.vsprite .pet-svg svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.vsprite .mood {
+  display: none;
+}
+
+.vsprite[data-mood='idle'] .m-idle,
+.vsprite[data-mood='focused'] .m-focused,
+.vsprite[data-mood='happy'] .m-happy,
+.vsprite[data-mood='celebrate'] .m-celebrate,
+.vsprite[data-mood='sleep'] .m-sleep,
+.vsprite[data-mood='confused'] .m-confused,
+.vsprite[data-mood='tired'] .m-tired,
+.vsprite[data-mood='love'] .m-love,
+.vsprite[data-mood='surprised'] .m-surprised,
+.vsprite[data-mood='playful'] .m-playful {
+  display: block;
+}
+
+.vsprite--shiny .pet-svg {
+  filter: drop-shadow(0 0 2px var(--pet-accent)) drop-shadow(0 0 5px var(--pet-accent));
+}
+
+.zoo-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.zoo-party {
+  flex: 1;
+  min-width: 0;
+}
+
+.zoo-party-label,
+.zoo-progress .zoo-hint {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.zoo-party-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 30px;
+}
+
+.zoo-party-chip {
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 2px;
+  background: var(--bg-inset);
+}
+
+.zoo-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.zoo-progress {
+  width: 96px;
+  flex: none;
+  text-align: right;
+}
+
+.zoo-progress-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg-inset);
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.zoo-progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent-bright);
+  transition: width 0.3s ease;
+}
+
+.zoo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.zoo-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoo-legend-item i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.zoo-scroll {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 4px 14px 14px;
+}
+
+.zoo-habitat {
+  position: relative;
+  margin-top: 12px;
+  padding: 8px 8px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 64px;
+}
+
+/* the habitat's scene, painted behind its critters (rich art drops in here) */
+.zoo-habitat-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.zoo-habitat-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0.9;
+}
+
+.zoo-habitat-scene svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* the living vivarium band: scene + ambient + roaming critters that perch */
+.zoo-stage {
+  position: relative;
+  height: 140px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: var(--bg-inset);
+}
+
+.zoo-stage-label {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg-raised) 70%, transparent);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* tap-to-interact ripples on the scene (sits under the critters) */
+.scene-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.scene-fx-ripple {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  border: 2px solid var(--fx-color);
+  transform: scale(0);
+  pointer-events: none;
+  animation: fx-ripple 0.7s ease-out forwards;
+}
+
+@keyframes fx-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(7);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-fx-ripple {
+    animation-duration: 0.4s;
+  }
+}
+
+.zoo-habitat-head,
+.zoo-grid,
+.zoo-empty {
+  position: relative;
+  z-index: 1;
+}
+
+.zoo-habitat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.zoo-habitat-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.zoo-empty {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 2px 0 4px;
+}
+
+.zoo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 6px;
+}
+
+.zoo-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--bg-inset);
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.zoo-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.zoo-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoo-card--in {
+  background: color-mix(in srgb, var(--accent-deep) 22%, transparent);
+}
+
+.zoo-card-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.zoo-card-shiny {
+  position: absolute;
+  bottom: 2px;
+  left: 4px;
+  font-size: 9px;
+  color: var(--warn);
+}
+
+.zoo-cell {
+  position: relative;
+}
+
+.zoo-cell:hover .zoo-copy {
+  opacity: 1;
+}
+
+.zoo-copy {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.zoo-copy:hover {
+  color: var(--accent-bright);
+}
+
+.zoo-trade {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.zoo-trade .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.zoo-trade-toggle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+
+.zoo-trade-toggle:hover {
+  color: var(--accent-bright);
+}
+
+.zoo-trade-msg {
+  width: 100%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.zoo-biomes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.zoo-biomes-row {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 3px;
+}
+
+.zoo-biome {
+  flex: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-dim);
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  padding: 3px 8px;
+}
+
+.zoo-biome--on {
+  color: var(--accent-bright);
+  border-color: color-mix(in srgb, var(--accent-bright) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-deep) 24%, transparent);
+}
+
+/* time-of-day slider row */
+.zoo-daynight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.zoo-daynight-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.zoo-daynight input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent-bright);
+}
+
+.zoo-daynight-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  min-width: 64px;
+  text-align: right;
+}
+
+.zoo-daynight-auto {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  padding: 3px 8px;
+}
+
+.zoo-daynight-auto--on {
+  color: var(--accent-bright);
+  border-color: color-mix(in srgb, var(--accent-bright) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-deep) 24%, transparent);
 }

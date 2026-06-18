@@ -7,7 +7,9 @@ import { useToasts } from './hooks/useToasts'
 import { useHotkeys } from './hooks/useHotkeys'
 import { Titlebar } from './components/Titlebar'
 import { ClockZone } from './components/ClockZone'
+import { CompactBar } from './components/CompactBar'
 import { PetLayer } from './components/PetLayer'
+import { HabitatBackdrop } from './components/HabitatBackdrop'
 import { TodaySummary } from './components/TodaySummary'
 import { ProjectList } from './components/ProjectList'
 import { ProjectForm } from './components/ProjectForm'
@@ -18,6 +20,7 @@ import { Settings } from './components/Settings'
 import { RulesEditor } from './components/RulesEditor'
 import { DayTimeline } from './components/DayTimeline'
 import { QuickSwitch } from './components/QuickSwitch'
+import { Zoo } from './components/Zoo'
 import { IdlePrompt } from './components/IdlePrompt'
 import { Toasts } from './components/Toasts'
 
@@ -34,15 +37,37 @@ function App(): React.JSX.Element {
   const [showRules, setShowRules] = useState(false)
   const [showTimeline, setShowTimeline] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
+  const [showZoo, setShowZoo] = useState(false)
   const [celebrate, setCelebrate] = useState(0)
+  const [view, setView] = useState<'full' | 'compact' | 'peek'>('full')
 
   const refreshProjects = useCallback((): void => {
     void window.timelog.listProjects(true).then(setProjects)
   }, [])
   useEffect(refreshProjects, [refreshProjects])
 
-  useEffect(() => window.timelogEvents.onOpenExportDialog(() => setShowExport(true)), [])
-  useEffect(() => window.timelogEvents.onOpenSettings(() => setShowSettings(true)), [])
+  // Tray actions should pop the full panel back open if it's minimized.
+  useEffect(
+    () =>
+      window.timelogEvents.onOpenExportDialog(() => {
+        setView('full')
+        setShowExport(true)
+      }),
+    []
+  )
+  useEffect(
+    () =>
+      window.timelogEvents.onOpenSettings(() => {
+        setView('full')
+        setShowSettings(true)
+      }),
+    []
+  )
+
+  // Keep the OS window size in sync with the view (full / minimized bar / peek).
+  useEffect(() => {
+    void window.timelog.setPanelView(view)
+  }, [view])
 
   // Apply the theme to the document root: set the dark/light baseline + inject
   // preset/custom variable overrides. Reacts to OS changes when 'system'.
@@ -64,7 +89,8 @@ function App(): React.JSX.Element {
   const liveProjects = useMemo(() => projects.filter((p) => !p.archived), [projects])
 
   const closeTopOverlay = useCallback((): void => {
-    if (showQuickSwitch) setShowQuickSwitch(false)
+    if (showZoo) setShowZoo(false)
+    else if (showQuickSwitch) setShowQuickSwitch(false)
     else if (showSettings) setShowSettings(false)
     else if (showRules) setShowRules(false)
     else if (showTimeline) setShowTimeline(false)
@@ -73,7 +99,16 @@ function App(): React.JSX.Element {
       setShowForm(false)
       setEditing(null)
     }
-  }, [showQuickSwitch, showSettings, showRules, showTimeline, showExport, showForm, editing])
+  }, [
+    showZoo,
+    showQuickSwitch,
+    showSettings,
+    showRules,
+    showTimeline,
+    showExport,
+    showForm,
+    editing
+  ])
 
   const hotkeys = useMemo(
     () => ({
@@ -116,25 +151,48 @@ function App(): React.JSX.Element {
   const idleEvent = state.pendingIdle[0] ?? null
   const drawerOpen = showForm || editing !== null
 
+  if (view !== 'full') {
+    return (
+      <div className="app app--compact" data-mode={state.mode} data-status={state.status}>
+        <CompactBar
+          state={state}
+          nowMs={nowMs}
+          view={view}
+          onPeek={() => setView('peek')}
+          onCollapse={() => setView('compact')}
+          onRestore={() => setView('full')}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="app" data-mode={state.mode} data-status={state.status}>
+      {prefs && (
+        <HabitatBackdrop
+          habitat={prefs.activeHabitat}
+          hour={prefs.dayNightHour ?? new Date(nowMs).getHours()}
+          diorama={prefs.petsEnabled && prefs.dioramaOnPanel}
+          state={state}
+          nowMs={nowMs}
+          longRunHours={prefs.longRunHours}
+          density={prefs.dioramaDensity}
+        />
+      )}
       <Titlebar
         mode={state.mode}
         trackingMode={state.trackingMode}
         onOpenSettings={() => setShowSettings(true)}
+        onMinimize={() => setView('compact')}
       />
       <div className="clock-wrap">
-        <ClockZone state={state} nowMs={nowMs} projects={projects} onChanged={refreshProjects} />
-        {prefs?.petsEnabled && prefs.pets.length > 0 && (
-          <PetLayer
-            pets={prefs.pets}
-            customPets={prefs.customPets}
-            state={state}
-            nowMs={nowMs}
-            longRunHours={prefs.longRunHours}
-            celebrate={celebrate}
-          />
-        )}
+        <ClockZone
+          state={state}
+          nowMs={nowMs}
+          projects={projects}
+          onChanged={refreshProjects}
+          onOpenRules={() => setShowRules(true)}
+        />
       </div>
       <TodaySummary
         projects={projects}
@@ -179,8 +237,21 @@ function App(): React.JSX.Element {
         }}
         onTimeline={() => setShowTimeline(true)}
         onExport={() => setShowExport(true)}
+        onZoo={() => setShowZoo(true)}
         exportNote={null}
       />
+
+      {prefs?.petsEnabled && (prefs.party.length > 0 || prefs.pets.length > 0) && (
+        <PetLayer
+          pets={prefs.pets}
+          customPets={prefs.customPets}
+          party={prefs.party}
+          state={state}
+          nowMs={nowMs}
+          longRunHours={prefs.longRunHours}
+          celebrate={celebrate}
+        />
+      )}
 
       {showExport && (
         <WeekView
@@ -214,6 +285,7 @@ function App(): React.JSX.Element {
       {showQuickSwitch && (
         <QuickSwitch projects={projects} state={state} onClose={() => setShowQuickSwitch(false)} />
       )}
+      {showZoo && prefs && <Zoo prefs={prefs} update={update} onClose={() => setShowZoo(false)} />}
       <Toasts toasts={toasts} onDismiss={dismiss} />
     </div>
   )

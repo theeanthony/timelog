@@ -5,6 +5,7 @@ import {
   isResting,
   approach,
   hopArc,
+  driftToward,
   GRAVITY,
   type Body
 } from '../src/shared/pet-physics'
@@ -49,6 +50,29 @@ describe('pet physics', () => {
     expect(approach(0, 100, 10)).toEqual({ x: 10, arrived: false })
     expect(approach(95, 100, 10)).toEqual({ x: 100, arrived: true })
     expect(approach(100, 100, 10)).toEqual({ x: 100, arrived: true })
+  })
+
+  it('driftToward steers a gravity-free body to its target and reports arrival', () => {
+    const b: Body = { x: 0, y: 0, vx: 0, vy: 0 }
+    let arrived = false
+    for (let i = 0; i < 600 && !arrived; i++) {
+      arrived = driftToward(b, 100, 50, 1 / 60).arrived
+    }
+    expect(arrived).toBe(true)
+    expect(Math.hypot(100 - b.x, 50 - b.y)).toBeLessThan(4) // within the arrival radius
+  })
+
+  it('driftToward adds no gravity (level travel stays level)', () => {
+    const b: Body = { x: 0, y: 30, vx: 0, vy: 0 }
+    driftToward(b, 200, 30, 0.1)
+    expect(b.vx).toBeGreaterThan(0) // accelerating toward the target
+    expect(b.y).toBeCloseTo(30, 5) // no downward pull when target is level
+  })
+
+  it('driftToward bleeds off a fling into a curve back toward the target', () => {
+    const b: Body = { x: 100, y: 50, vx: -400, vy: 0 } // flung hard left, target is right
+    driftToward(b, 300, 50, 1 / 60)
+    expect(b.vx).toBeGreaterThan(-400) // momentum eased toward the new heading
   })
 
   it('hopArc starts low, peaks above the path midway, and lands on target', () => {

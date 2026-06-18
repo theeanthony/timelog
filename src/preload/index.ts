@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC, type NewProject, type TimelogApi } from '../shared/ipc-contract'
-import type { Prefs, RangeUnit, TrackerState, TrackingMode } from '../shared/types'
+import type { Prefs, RangeUnit, TrackerState, TrackingMode, UpdateStatus } from '../shared/types'
 
 const api: TimelogApi = {
   getState: () => ipcRenderer.invoke(IPC.getState),
@@ -12,6 +12,7 @@ const api: TimelogApi = {
   setManualOverride: (code) => ipcRenderer.invoke(IPC.setManualOverride, code),
   clearOverride: () => ipcRenderer.invoke(IPC.clearOverride),
   setTrackingMode: (mode: TrackingMode) => ipcRenderer.invoke(IPC.setTrackingMode, mode),
+  setPanelView: (view) => ipcRenderer.invoke(IPC.setPanelView, view),
 
   listProjects: (includeArchived) => ipcRenderer.invoke(IPC.listProjects, includeArchived),
   addProject: (p: NewProject) => ipcRenderer.invoke(IPC.addProject, p),
@@ -23,12 +24,18 @@ const api: TimelogApi = {
   deleteProject: (code, reassignTo) => ipcRenderer.invoke(IPC.deleteProject, code, reassignTo),
 
   listRules: (projectCode) => ipcRenderer.invoke(IPC.listRules, projectCode),
-  addRule: (projectCode, pattern, priority) =>
-    ipcRenderer.invoke(IPC.addRule, projectCode, pattern, priority),
+  addRule: (projectCode, pattern, priority, field) =>
+    ipcRenderer.invoke(IPC.addRule, projectCode, pattern, priority, field),
   addRuleForTitle: (projectCode, title) =>
     ipcRenderer.invoke(IPC.addRuleForTitle, projectCode, title),
+  addRuleForApp: (projectCode, appName) =>
+    ipcRenderer.invoke(IPC.addRuleForApp, projectCode, appName),
   updateRule: (id, patch) => ipcRenderer.invoke(IPC.updateRule, id, patch),
   deleteRule: (id) => ipcRenderer.invoke(IPC.deleteRule, id),
+
+  listUnmatched: () => ipcRenderer.invoke(IPC.listUnmatched),
+  assignUnmatched: (app, title, code, field) =>
+    ipcRenderer.invoke(IPC.assignUnmatched, app, title, code, field),
 
   listDaySessions: (dayStartTs) => ipcRenderer.invoke(IPC.listDaySessions, dayStartTs),
   reassignSession: (id, code) => ipcRenderer.invoke(IPC.reassignSession, id, code),
@@ -44,6 +51,14 @@ const api: TimelogApi = {
   getPrefs: () => ipcRenderer.invoke(IPC.getPrefs),
   setPrefs: (patch: Partial<Prefs>) => ipcRenderer.invoke(IPC.setPrefs, patch),
   getAppInfo: () => ipcRenderer.invoke(IPC.getAppInfo),
+
+  checkForUpdates: () => ipcRenderer.invoke(IPC.checkForUpdates),
+  installUpdate: () => ipcRenderer.invoke(IPC.installUpdate),
+  onUpdateStatus: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: UpdateStatus): void => cb(s)
+    ipcRenderer.on(IPC.updateStatus, listener)
+    return () => ipcRenderer.removeListener(IPC.updateStatus, listener)
+  },
 
   completeSetup: (trackingMode: TrackingMode) =>
     ipcRenderer.invoke(IPC.completeSetup, trackingMode),

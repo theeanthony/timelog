@@ -1,12 +1,14 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain } from 'electron'
 import { writeFileSync } from 'node:fs'
 import { IPC, type ExportResult, type NewProject } from '../shared/ipc-contract'
-import type { Prefs, RangeUnit } from '../shared/types'
+import type { PanelView, Prefs, RangeUnit, RuleField } from '../shared/types'
 import type { Db } from './db/database'
+import { setPanelView } from './window'
 import { KEYS, setState } from './db/app-state'
 import {
   addProject,
   addRule,
+  addRuleForApp,
   addRuleForTitle,
   archiveProject,
   deleteProject,
@@ -19,6 +21,7 @@ import {
   updateProject,
   updateRule
 } from './db/projects'
+import { clearUnmatched, listUnmatched } from './db/unmatched'
 import {
   deleteSession,
   insertClosedSession,
@@ -30,6 +33,7 @@ import { getIdleEvent, resolveIdleEvent } from './db/idle-events'
 import { computeWeekTotals, weekTotalsToCsv } from './export/csv'
 import { computeRangeBreakdown, computeWeekBreakdown } from './export/breakdown'
 import { getPrefs, setPrefs } from './prefs'
+import { checkForUpdates, installUpdate, setupUpdater } from './updater'
 import { applyWindowPrefs, registerGlobalShortcut } from './runtime'
 import type { Tracker } from './engine/tracker'
 import type { Clock } from './platform/types'
@@ -44,6 +48,8 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock, win: Browser
   ipcMain.handle(IPC.setTrackingMode, (_e, mode: 'auto' | 'manual') =>
     tracker.setTrackingMode(mode)
   )
+
+  ipcMain.handle(IPC.setPanelView, (_e, view: PanelView) => setPanelView(win, view))
 
   // ── projects ──────────────────────────────────────────────────────────────
   ipcMain.handle(IPC.listProjects, (_e, includeArchived?: boolean) =>
@@ -94,11 +100,14 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock, win: Browser
   // ── rules ─────────────────────────────────────────────────────────────────
   ipcMain.handle(IPC.listRules, (_e, projectCode?: string) => listRules(db, projectCode))
 
-  ipcMain.handle(IPC.addRule, (_e, projectCode: string, pattern: string, priority?: number) => {
-    const id = addRule(db, projectCode, pattern, priority)
-    tracker.reloadRules()
-    return id
-  })
+  ipcMain.handle(
+    IPC.addRule,
+    (_e, projectCode: string, pattern: string, priority?: number, field?: RuleField) => {
+      const id = addRule(db, projectCode, pattern, priority, field)
+      tracker.reloadRules()
+      return id
+    }
+  )
 
   ipcMain.handle(IPC.addRuleForTitle, (_e, projectCode: string, title: string) => {
     const id = addRuleForTitle(db, projectCode, title)
@@ -106,9 +115,19 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock, win: Browser
     return id
   })
 
+  ipcMain.handle(IPC.addRuleForApp, (_e, projectCode: string, appName: string) => {
+    const id = addRuleForApp(db, projectCode, appName)
+    tracker.reloadRules()
+    return id
+  })
+
   ipcMain.handle(
     IPC.updateRule,
-    (_e, id: number, patch: { pattern?: string; priority?: number; enabled?: boolean }) => {
+    (
+      _e,
+      id: number,
+      patch: { pattern?: string; priority?: number; enabled?: boolean; field?: RuleField }
+    ) => {
       updateRule(db, id, patch)
       tracker.reloadRules()
     }
@@ -118,6 +137,20 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock, win: Browser
     deleteRule(db, id)
     tracker.reloadRules()
   })
+
+  // ── unmatched windows (smart no-match review) ───────────────────────────────
+  ipcMain.handle(IPC.listUnmatched, () => listUnmatched(db))
+
+  ipcMain.handle(
+    IPC.assignUnmatched,
+    (_e, app: string, title: string, code: string, field: RuleField) => {
+      if (field === 'app') addRuleForApp(db, code, app)
+      else addRuleForTitle(db, code, title)
+      clearUnmatched(db, app, title)
+      tracker.reloadRules()
+      tracker.refresh()
+    }
+  )
 
   // ── sessions (day timeline + manual entry) ─────────────────────────────────
   ipcMain.handle(IPC.listDaySessions, (_e, dayStartTs: number) =>
@@ -178,6 +211,11 @@ export function registerIpc(db: Db, tracker: Tracker, clock: Clock, win: Browser
   })
 
   ipcMain.handle(IPC.getAppInfo, () => ({ version: app.getVersion(), platform: process.platform }))
+
+  // ── updates (manual check) ─────────────────────────────────────────────────
+  setupUpdater(win)
+  ipcMain.handle(IPC.checkForUpdates, () => checkForUpdates())
+  ipcMain.handle(IPC.installUpdate, () => installUpdate())
 
   ipcMain.handle(IPC.completeSetup, (_e, trackingMode: 'auto' | 'manual') => {
     setState(db, KEYS.trackingMode, trackingMode === 'manual' ? 'manual' : 'auto')
